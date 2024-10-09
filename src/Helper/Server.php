@@ -48,11 +48,11 @@ final class Server
         return true;
     }
 
-    public function isTraefikRunning(string $namespace): bool
+    public function isProxyRunning(string $namespace): bool
     {
         /** @var Result<ArrayCollection<DockerService>> $res */
         $res = $this->executor->run(DockerServiceList::class, [
-            Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$namespace}-mager_traefik"]
+            Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$namespace}-mager_proxy"]
         ]);
 
         if ($res->data->isEmpty()) {
@@ -62,11 +62,11 @@ final class Server
         return true;
     }
 
-    public function isDnsMasqRunning(string $namespace): bool
+    public function isProxyAutoConfigRunning(string $namespace): bool
     {
         /** @var Result<ArrayCollection<DockerService>> $res */
         $res = $this->executor->run(DockerServiceList::class, [
-            Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$namespace}-mager_dns"]
+            Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$namespace}-mager_pac"]
         ]);
 
         if ($res->data->isEmpty()) {

@@ -15,7 +15,7 @@ final class DockerSaveImage implements TaskInterface
         $imageName = Helper::getArg(Param::DOCKER_IMAGE_NAME->value, $args);
 
         return [
-            "docker save -o {$namespace}_{$imageName}.tar {$imageName}",
+            "docker save -o {$namespace}-{$imageName}.tar {$imageName}",
         ];
     }
 

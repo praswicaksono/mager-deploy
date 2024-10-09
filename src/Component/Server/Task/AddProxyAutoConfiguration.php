@@ -6,15 +6,24 @@ namespace App\Component\Server\Task;
 use App\Component\Server\FailedCommandException;
 use App\Component\Server\TaskInterface;
 
-final class AddLocalHostFile implements TaskInterface
+final class AddProxyAutoConfiguration implements TaskInterface
 {
     public static function exec(array $args = []): array
     {
         $dir = getenv('HOME');
 
+        $pac = <<<PAC
+function FindProxyForURL(url, host) {
+  if (shExpMatch(host, "*.wip")) {
+    return "PROXY 127.0.0.1:80";
+  }
+  return "DIRECT";
+}
+PAC;
+
         return [
             "mkdir -p {$dir}/.mager",
-            "echo '127.0.0.1 *.wip' > {$dir}/.mager/hosts",
+            "echo '{$pac}' > {$dir}/.mager/proxy.pac",
         ];
     }
 

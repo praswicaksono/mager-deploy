@@ -16,7 +16,7 @@ final class DockerStackServices implements TaskInterface
         $stackName = Helper::getArg(Param::DOCKER_STACK_DEPLOY_APP_NAME->value, $args);
 
         return [
-            "docker stack services --format '{{json .}}' {$namespace}_{$stackName}"
+            "docker stack services --format '{{json .}}' {$namespace}-{$stackName}"
         ];
     }
 

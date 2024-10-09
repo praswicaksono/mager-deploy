@@ -34,4 +34,7 @@ enum Param: string
     case DOCKER_IMAGE_NAME = 'docker.image.name';
     case DOCKER_INSPECT_ID = 'docker.inspect.id';
     case DOCKER_INSPECT_FILTER = 'docker.inspect.filter';
+    case DOCKER_IMAGE_TAG = 'docker.image.tag';
+    case DOCKER_IMAGE_TARGET = 'docker.image.target';
+    case DOCKER_IMAGE_OUTPUT = 'docker.image.output';
 }

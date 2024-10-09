@@ -20,7 +20,7 @@ final class DockerStackDeploy implements TaskInterface
             $cmd = Helper::buildOptions('--compose-file', $composeFile, $cmd);
         }
 
-        $cmd[] = "--detach=false {$namespace}_{$appName}";
+        $cmd[] = "--detach=false {$namespace}-{$appName}";
 
         return [implode(' ', $cmd)];
     }

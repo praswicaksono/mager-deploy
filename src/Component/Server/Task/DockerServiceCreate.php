@@ -10,6 +10,7 @@ final class DockerServiceCreate implements TaskInterface
 {
     public static function exec(array $args = []): array
     {
+        $namespace = Helper::getArg(Param::GLOBAL_NAMESPACE->value, $args);
         $image = Helper::getArg(Param::DOCKER_SERVICE_IMAGE->value, $args);
         $name = Helper::getArg(Param::DOCKER_SERVICE_NAME->value, $args);
         $constraints = Helper::getArg(Param::DOCKER_SERVICE_CONSTRAINTS->value, $args, required: false) ?? [];
@@ -31,7 +32,7 @@ final class DockerServiceCreate implements TaskInterface
         $cmd = Helper::buildOptions('--label', $labels, $cmd);
         $cmd = Helper::buildOptions('--mount', $mounts, $cmd);
 
-        $cmd[] = "--name {$name}";
+        $cmd[] = "--name {$namespace}-{$name}";
         $cmd[] = "--detach";
         $cmd[] = "--replicas {$replicas}";
 
