@@ -1,0 +1,13 @@
+{
+  "main": "bin/mager",
+  "directories": ["config", "src", "vendor", "var"],
+  "finder": [
+    {
+      "name": "*.php",
+      "exclude": ["Tests", "tests"],
+      "in": "vendor"
+    }
+  ],
+  "compression": "GZ",
+  "output": "build/mager.phar"
+}

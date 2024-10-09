@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+require __DIR__.'/../vendor/autoload.php';
+
+use Symfony\Component\Console\Application;
+use App\Command\MagerWhoamiCommand;
+use App\Command\MagerInitCommand;
+
+$application = new Application('mager-deploy', '1.0.0');
+
+$application->add(new MagerInitCommand());
+$application->add(new MagerWhoamiCommand());
+
+$application->run();

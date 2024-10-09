@@ -4,23 +4,26 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "php": ">=8.2",
+        "php": ">=8.3",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "amphp/http-client": "^5.1",
+        "doctrine/collections": "^2.2",
+        "spatie/ssh": "^1.10",
         "symfony/console": "7.1.*",
         "symfony/dotenv": "7.1.*",
         "symfony/flex": "^2",
         "symfony/framework-bundle": "7.1.*",
         "symfony/runtime": "7.1.*",
-        "symfony/yaml": "7.1.*"
-    },
-    "require-dev": {
+        "symfony/yaml": "7.1.*",
+        "webmozart/assert": "^1.11"
     },
     "config": {
         "allow-plugins": {
             "php-http/discovery": true,
             "symfony/flex": true,
-            "symfony/runtime": true
+            "symfony/runtime": true,
+            "bamarni/composer-bin-plugin": true
         },
         "sort-packages": true
     },
@@ -45,15 +48,12 @@
         "symfony/polyfill-php82": "*"
     },
     "scripts": {
-        "auto-scripts": {
-            "cache:clear": "symfony-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd"
-        },
-        "post-install-cmd": [
-            "@auto-scripts"
-        ],
-        "post-update-cmd": [
-            "@auto-scripts"
+        "compile": [
+            "composer install --no-dev",
+            "./bin/console cache:clear --env=prod --no-debug",
+            "./bin/console cache:warmup --env=prod",
+            "composer dumpautoload --optimize --no-dev",
+            "./vendor/bin/box compile -vvv"
         ]
     },
     "conflict": {
@@ -64,5 +64,13 @@
             "allow-contrib": false,
             "require": "7.1.*"
         }
+    },
+    "require-dev": {
+        "bamarni/composer-bin-plugin": "^1.8",
+        "phpunit/phpunit": "^9.5",
+        "symfony/browser-kit": "7.1.*",
+        "symfony/css-selector": "7.1.*",
+        "symfony/maker-bundle": "^1.61",
+        "symfony/phpunit-bridge": "^7.1"
     }
 }
