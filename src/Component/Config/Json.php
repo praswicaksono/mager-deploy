@@ -12,6 +12,8 @@ final class Json implements ConfigInterface
 {
     private Dot $config;
 
+    private string $path;
+
     public static function fromFile(string $path): self
     {
         $object = new self();
@@ -23,6 +25,7 @@ final class Json implements ConfigInterface
         }
 
         $object->config = \dot(json_decode($json, true));
+        $object->path = $path;
 
         return $object;
     }
@@ -39,8 +42,8 @@ final class Json implements ConfigInterface
         return $this;
     }
 
-    public function toFile(string $path): void
+    public function save(): void
     {
-        write($path, $this->config->toJson());
+        write($this->path, $this->config->toJson());
     }
 }

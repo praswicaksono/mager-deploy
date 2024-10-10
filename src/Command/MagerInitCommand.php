@@ -2,7 +2,11 @@
 
 namespace App\Command;
 
+use App\Component\Config\ConfigFactory;
+use App\Component\Config\ConfigInterface;
 use App\Component\Config\Json;
+use App\Component\Server\ExecutorFactory;
+use App\Component\Server\ExecutorInterface;
 use App\Component\Server\LocalExecutor;
 use App\Component\Server\RemoteExecutor;
 use App\Component\Server\Task\AddProxyAutoConfiguration;
@@ -11,7 +15,6 @@ use App\Component\Server\Task\DockerServiceCreate;
 use App\Component\Server\Task\DockerSwarmInit;
 use App\Component\Server\Task\Param;
 use App\Helper\Server;
-use Spatie\Ssh\Ssh;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -29,8 +32,9 @@ use function Amp\async;
 )]
 class MagerInitCommand extends Command
 {
-    public function __construct()
-    {
+    public function __construct(
+        private readonly ConfigInterface $config
+    ) {
         parent::__construct();
     }
 
@@ -61,8 +65,6 @@ class MagerInitCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $configPath = sprintf("%s/.mager/config.json", getenv('HOME'));
-        $config = Json::fromFile($configPath);
 
         $isLocal = $input->getOption('local') ?? false;
         $namespace = $input->getOption('namespace') ?? 'mager';
@@ -78,32 +80,24 @@ class MagerInitCommand extends Command
             }
         };
 
-        $config->set('namespace', $namespace);
-        $config->set('debug', $debug);
-        $config->set('is_local', $isLocal);
-
-        $executor = new LocalExecutor($debug);
+        $this->config->set('namespace', $namespace);
+        $this->config->set('debug', $debug);
+        $this->config->set('is_local', $isLocal);
 
         if (!$isLocal) {
             $managerIp = $io->askQuestion(new Question('Please enter your manager ip: ', '127.0.0.1'));
             $sshUser = $io->askQuestion(new Question('Please enter manager ssh user:', 'root'));
             $sshPort = $io->askQuestion(new Question('Please enter manager ssh port:', '22'));
             $sshKeyPath =$io->askQuestion(new Question('Please enter manager ssh key path:', '~/.ssh/id_rsa'));
-            $ssh = Ssh::create($sshUser, $managerIp)
-                ->usePort($sshPort)
-                ->usePrivateKey($sshKeyPath)
-                ->onOutput($onProgress)
-                ->disableStrictHostKeyChecking()
-                ->disablePasswordAuthentication()
-                ->setTimeout(60 * 30);
-            $executor = new RemoteExecutor($ssh);
-            $config->set('remote.0.manager_ip', $managerIp);
-            $config->set('remote.0.ssh_user', $sshUser);
-            $config->set('remote.0.ssh_port', $sshPort);
-            $config->set('remote.0.ssh_key_path', $sshKeyPath);
+            $this->config->set('remote.0.manager_ip', $managerIp);
+            $this->config->set('remote.0.ssh_user', $sshUser);
+            $this->config->set('remote.0.ssh_port', (int) $sshPort);
+            $this->config->set('remote.0.ssh_key_path', $sshKeyPath);
         }
 
-        $config->toFile($configPath);
+        $this->config->save();
+
+        $executor = (new ExecutorFactory($this->config))();
 
         $helper = Server::withExecutor($executor);
 

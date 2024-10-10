@@ -8,7 +8,7 @@ interface ConfigInterface
 
     public static function fromFile(string $path): self;
 
-    public function toFile(string $path): void;
+    public function save(): void;
 
     public function set(string $key, mixed $value = null): self;
 
