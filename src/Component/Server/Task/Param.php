@@ -31,6 +31,14 @@ enum Param: string
     case DOCKER_SERVICE_MOUNT = 'docker.service.volume';
     case DOCKER_SERVICE_ENV = 'docker.service.env';
     case DOCKER_SERVICE_REPLICAS = 'docker.service.replicas';
+    case DOCKER_SERVICE_UPDATE_DELAY = 'docker.service.update_delay';
+    case DOCKER_SERVICE_UPDATE_PARALLELISM = 'docker.service.update_parallelism';
+    case DOCKER_SERVICE_LIMIT_CPU = 'docker.service.limit_cpu';
+    case DOCKER_SERVICE_HEALTH_CMD = 'docker.service.health_cmd';
+    case DOCKER_SERVICE_HEALTH_INTERVAL = 'docker.service.health_interval';
+    case DOCKER_SERVICE_HEALTH_RETRIES = 'docker.service.health_retries';
+    case DOCKER_SERVICE_ENV_FILE = 'docker.service.env_file';
+    case DOCKER_SERVICE_LIMIT_MEMORY = 'docker.service.limit_memory';
     case DOCKER_IMAGE_NAME = 'docker.image.name';
     case DOCKER_INSPECT_ID = 'docker.inspect.id';
     case DOCKER_INSPECT_FILTER = 'docker.inspect.filter';

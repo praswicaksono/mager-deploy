@@ -7,6 +7,8 @@
         "php": ">=8.3",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "adbario/php-dot-notation": "^3.3",
+        "amphp/file": "^3.1",
         "amphp/http-client": "^5.1",
         "doctrine/collections": "^2.2",
         "spatie/ssh": "^1.10",
