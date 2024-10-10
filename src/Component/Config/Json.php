@@ -18,6 +18,11 @@ final class Json implements ConfigInterface
     {
         $object = new self();
 
+        $dir = str_replace('/config.json', '', $path);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755);
+        }
+
         touch($path);
         $json = read($path);
         if (empty($json)) {

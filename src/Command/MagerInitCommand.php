@@ -66,6 +66,7 @@ class MagerInitCommand extends Command
         $isLocal = $input->getOption('local') ?? false;
         $namespace = $input->getOption('namespace') ?? 'mager';
         $debug = $input->getOption('debug') ?? false;
+        $managerIp = '127.0.0.1';
 
         $onProgress = function (string $type, string $buffer) use ($io, $debug) {
             if ($debug) {
@@ -176,7 +177,7 @@ class MagerInitCommand extends Command
                         Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['80:80', '443:443', '8080:8080'],
                         Param::DOCKER_SERVICE_LABEL->value => [
                             'traefik.enable=true',
-                            "traefik.http.routers.mydashboard.rule=Host(`{$this->config->get('proxy_dashboard')}`)",
+                            "'traefik.http.routers.mydashboard.rule=Host(`{$this->config->get('proxy_dashboard')}`)'",
                             'traefik.http.routers.mydashboard.service=api@internal',
                             "traefik.http.middlewares.myauth.basicauth.users={$this->config->get('proxy_user')}:{$this->config->get('proxy_password')}",
                         ],

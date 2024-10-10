@@ -33,7 +33,6 @@ final class DockerServiceCreate implements TaskInterface
         $cmd = Helper::buildOptions('--mount', $mounts, $cmd);
 
         $cmd[] = "--name {$namespace}-{$name}";
-        $cmd[] = "--detach";
         $cmd[] = "--replicas {$replicas}";
 
         if ($mode !== null) {
