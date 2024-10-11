@@ -2,7 +2,7 @@
 
 namespace App\Command;
 
-use App\Component\Config\ConfigInterface;
+use App\Component\Config\Config;
 use App\Component\Server\ExecutorFactory;
 use App\Component\Server\Task\AddProxyAutoConfiguration;
 use App\Component\Server\Task\DockerNetworkCreate;
@@ -33,7 +33,7 @@ class MagerInitCommand extends Command
     private const TRAEFIK_DASHBOARD_NAME = 'magerdashboard';
 
     public function __construct(
-        private readonly ConfigInterface $config
+        private readonly Config $config
     ) {
         parent::__construct();
     }
@@ -81,9 +81,9 @@ class MagerInitCommand extends Command
             }
         };
 
-        $this->config->set('namespace', $namespace);
-        $this->config->set('debug', $debug);
-        $this->config->set('is_local', $isLocal);
+        $this->config->set(Config::NAMESPACE, $namespace);
+        $this->config->set(Config::DEBUG, $debug);
+        $this->config->set(Config::IS_LOCAL, $isLocal);
         $proxyDashboard = 'dashboard.traefik.wip';
         $proxyUser = 'admin';
         $proxyPassword = 'admin123';
@@ -103,9 +103,9 @@ class MagerInitCommand extends Command
             $this->config->set('remote.0.ssh_key_path', $sshKeyPath);
         }
 
-        $this->config->set('proxy_dashboard', $proxyDashboard);
-        $this->config->set('proxy_user', $proxyUser);
-        $this->config->set('proxy_password', Encryption::Htpasswd($proxyPassword));
+        $this->config->set(Config::PROXY_DASHBOARD, $proxyDashboard);
+        $this->config->set(Config::PROXY_USER, $proxyUser);
+        $this->config->set(Config::PROXY_PASSWORD, Encryption::Htpasswd($proxyPassword));
 
         $this->config->save();
 
@@ -189,7 +189,7 @@ class MagerInitCommand extends Command
                         Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['80:80', '443:443', '8080:8080'],
                         Param::DOCKER_SERVICE_LABEL->value => [
                             'traefik.enable=true',
-                            Traefik::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->get('proxy_dashboard')),
+                            Traefik::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->get(Config::PROXY_DASHBOARD)),
                             Traefik::port(self::TRAEFIK_DASHBOARD_NAME, 80),
                             'traefik.http.routers.mydashboard.service=api@internal',
                             'traefik.http.routers.mydashboard.middlewares=dashboardauth',

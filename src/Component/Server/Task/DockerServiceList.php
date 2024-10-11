@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Component\Server\Task;
 
 use App\Component\Server\Docker\DockerService;
+use App\Component\Server\FailedCommandException;
 use App\Component\Server\Helper;
 use App\Component\Server\TaskInterface;
 

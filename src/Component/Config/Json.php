@@ -8,7 +8,7 @@ use Adbar\Dot;
 use function Amp\File\write;
 use function Amp\File\read;
 
-final class Json implements ConfigInterface
+final class Json implements Config
 {
     private Dot $config;
 
@@ -40,7 +40,7 @@ final class Json implements ConfigInterface
         return $this->config->get($key);
     }
 
-    public function set(string $key, mixed $value = null): ConfigInterface
+    public function set(string $key, mixed $value = null): Config
     {
         $this->config->set($key, $value);
 

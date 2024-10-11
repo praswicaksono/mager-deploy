@@ -3,12 +3,12 @@ declare(strict_types=1);
 
 namespace App\Component\Server;
 
-use App\Component\Config\ConfigInterface;
+use App\Component\Config\Config;
 use Spatie\Ssh\Ssh;
 
 final readonly class ExecutorFactory
 {
-    public function __construct(private ConfigInterface $config)
+    public function __construct(private Config $config)
     {
 
     }

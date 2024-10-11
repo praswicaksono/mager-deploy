@@ -5,7 +5,7 @@ namespace App\Component\Config;
 
 class ConfigFactory
 {
-    public static function create(): ConfigInterface
+    public static function create(): Config
     {
         $configPath = sprintf("%s/.mager/config.json", getenv('HOME'));
 
