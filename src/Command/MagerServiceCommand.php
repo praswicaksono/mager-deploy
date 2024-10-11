@@ -36,7 +36,7 @@ final class MagerServiceCommand extends Command
         $this->addOption(
             'namespace',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             'Create namespace for the project'
         );
     }
@@ -50,7 +50,6 @@ final class MagerServiceCommand extends Command
 
         Assert::notEmpty($namespace, '--namespace must be a non-empty string');
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
-
 
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor);

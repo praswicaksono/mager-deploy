@@ -28,7 +28,12 @@ class MagerWhoamiCommand extends Command
 
     protected function configure(): void
     {
-
+        $this->addOption(
+            'namespace',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'Create namespace for the project'
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
