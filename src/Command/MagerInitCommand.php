@@ -55,6 +55,13 @@ class MagerInitCommand extends Command
         );
 
         $this->addOption(
+            'no-proxy',
+            null,
+            InputOption::VALUE_NONE,
+            'Dont install proxy'
+        );
+
+        $this->addOption(
             'namespace',
             null,
             InputOption::VALUE_OPTIONAL,
@@ -69,6 +76,8 @@ class MagerInitCommand extends Command
         $isLocal = $input->getOption('local') ?? false;
         $namespace = $input->getOption('namespace') ?? 'mager';
         $debug = $input->getOption('debug') ?? false;
+        $noProxy = $input->getOption('no-proxy') ?? false;
+
         $managerIp = '127.0.0.1';
 
         $onProgress = function (string $type, string $buffer) use ($io, $debug) {
@@ -139,48 +148,49 @@ class MagerInitCommand extends Command
             );
         })->await();
 
-        $io->text('Setup proxy volume ...');
-        async(function () use ($helper, $namespace, $onProgress) {
-            $helper->exec(
-                DockerVolumeCreate::class,
-                [
-                    Param::GLOBAL_NAMESPACE->value => $namespace,
-                    Param::DOCKER_VOLUME_NAME->value => 'proxy_letsencrypt',
-                ],
-                $onProgress,
-                continueOnError: true
-            );
-        })->await();
-
-        $io->text('Configuring Mager proxy ...');
-        async(function () use ($helper, $namespace, $onProgress, $isLocal) {
-            if (! $helper->isProxyRunning($namespace)) {
-                $sslSetup = [
-                    '--entrypoints.web.http.redirections.entrypoint.to=websecure',
-                    '--entryPoints.web.http.redirections.entrypoint.scheme=https',
-                    '--entrypoints.websecure.address=:443',
-                    '--entrypoints.websecure.http.tls.certresolver=mager',
-                    '--certificatesresolvers.mager.acme.email=hello@praswicaksono.pw',
-                    '--certificatesresolvers.mager.acme.tlschallenge=true',
-                    '--certificatesresolvers.mager.acme.storage=/letsencrypt/acme.json'
-                ];
-
-                $command = [
-                    '--api.dashboard=true',
-                    '--api=true',
-                    '--log.level=INFO',
-                    '--accesslog=true',
-                    "--providers.swarm.network={$namespace}-main",
-                    '--providers.docker.exposedByDefault=false',
-                    '--entrypoints.web.address=:80',
-                ];
-
-                if (! $isLocal) {
-                    $command = array_merge($sslSetup, $command);
-                }
-
+        if (!$noProxy) {
+            $io->text('Setup proxy volume ...');
+            async(function () use ($helper, $namespace, $onProgress) {
                 $helper->exec(
-                    DockerServiceCreate::class, [
+                    DockerVolumeCreate::class,
+                    [
+                        Param::GLOBAL_NAMESPACE->value => $namespace,
+                        Param::DOCKER_VOLUME_NAME->value => 'proxy_letsencrypt',
+                    ],
+                    $onProgress,
+                    continueOnError: true
+                );
+            })->await();
+
+            $io->text('Configuring Mager proxy ...');
+            async(function () use ($helper, $namespace, $onProgress, $isLocal) {
+                if (! $helper->isProxyRunning($namespace)) {
+                    $sslSetup = [
+                        '--entrypoints.web.http.redirections.entrypoint.to=websecure',
+                        '--entryPoints.web.http.redirections.entrypoint.scheme=https',
+                        '--entrypoints.websecure.address=:443',
+                        '--entrypoints.websecure.http.tls.certresolver=mager',
+                        '--certificatesresolvers.mager.acme.email=hello@praswicaksono.pw',
+                        '--certificatesresolvers.mager.acme.tlschallenge=true',
+                        '--certificatesresolvers.mager.acme.storage=/letsencrypt/acme.json'
+                    ];
+
+                    $command = [
+                        '--api.dashboard=true',
+                        '--api=true',
+                        '--log.level=INFO',
+                        '--accesslog=true',
+                        "--providers.swarm.network={$namespace}-main",
+                        '--providers.docker.exposedByDefault=false',
+                        '--entrypoints.web.address=:80',
+                    ];
+
+                    if (! $isLocal) {
+                        $command = array_merge($sslSetup, $command);
+                    }
+
+                    $helper->exec(
+                        DockerServiceCreate::class, [
                         Param::GLOBAL_NAMESPACE->value => $namespace,
                         Param::DOCKER_SERVICE_IMAGE->value => 'traefik:v3.2',
                         Param::DOCKER_SERVICE_NAME->value => 'mager_proxy',
@@ -201,24 +211,24 @@ class MagerInitCommand extends Command
                         ],
                         Param::DOCKER_SERVICE_COMMAND->value => implode(' ', $command),
                     ],
-                    $onProgress
-                );
-            }
-        })->await();
-
-        if ($isLocal) {
-            $io->text('Setup proxy auto config ...');
-            async(function () use ($helper, $namespace, $onProgress) {
-                $helper->exec(
-                    AddProxyAutoConfiguration::class
-                );
+                        $onProgress
+                    );
+                }
             })->await();
 
-            $io->text('Install local proxy for custom tld ...');
-            async(function() use ($helper, $namespace, $onProgress) {
-                if (! $helper->isProxyAutoConfigRunning($namespace)) {
+            if ($isLocal) {
+                $io->text('Setup proxy auto config ...');
+                async(function () use ($helper, $namespace, $onProgress) {
                     $helper->exec(
-                        DockerServiceCreate::class, [
+                        AddProxyAutoConfiguration::class
+                    );
+                })->await();
+
+                $io->text('Install local proxy for custom tld ...');
+                async(function() use ($helper, $namespace, $onProgress) {
+                    if (! $helper->isProxyAutoConfigRunning($namespace)) {
+                        $helper->exec(
+                            DockerServiceCreate::class, [
                             Param::GLOBAL_NAMESPACE->value => $namespace,
                             Param::DOCKER_SERVICE_IMAGE->value => 'nginx',
                             Param::DOCKER_SERVICE_NAME->value => 'mager_pac',
@@ -228,10 +238,11 @@ class MagerInitCommand extends Command
                             Param::DOCKER_SERVICE_LABEL->value => Traefik::enable(),
                             Param::DOCKER_SERVICE_MOUNT->value => ['type=bind,source=/home/jowy/.mager/proxy.pac,destination=/usr/share/nginx/html/proxy.pac'],
                         ],
-                        $onProgress
-                    );
-                }
-            })->await();
+                            $onProgress
+                        );
+                    }
+                })->await();
+            }
         }
 
         $io->success('All Is Done ! Happy Developing !');
