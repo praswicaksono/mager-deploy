@@ -13,20 +13,22 @@ final readonly class ExecutorFactory
 
     }
 
-    public function __invoke(): ExecutorInterface
+    public function __invoke(string $namespace): ExecutorInterface
     {
-        $executor = new LocalExecutor($this->config->get('debug', false));
-        if (! $this->config->get('is_local', true)) {
+        $debug = $this->config->get("server.{$namespace}.debug", false);
+        $executor = new LocalExecutor($debug);
+
+        if (! $this->config->get("server.{$namespace}.is_local", true)) {
             $ssh = Ssh::create(
-                $this->config->get('remote.0.ssh_user'),
-                $this->config->get('remote.0.manager_ip')
+                $this->config->get("server.{$namespace}.ssh_user"),
+                $this->config->get("server.{$namespace}.manager_ip")
             )->disablePasswordAuthentication()
-                ->usePort($this->config->get('remote.0.ssh_port'))
-                ->usePrivateKey($this->config->get('remote.0.ssh_key_path'))
+                ->usePort($this->config->get("server.{$namespace}.ssh_port"))
+                ->usePrivateKey($this->config->get("server.{$namespace}.ssh_key_path"))
                 ->disableStrictHostKeyChecking()
                 ->disablePasswordAuthentication()
                 ->setTimeout(60 * 30);
-            $executor = new RemoteExecutor($ssh, $this->config->get('debug', false));
+            $executor = new RemoteExecutor($ssh, $debug);
         }
 
         return $executor;

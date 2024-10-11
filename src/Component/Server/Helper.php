@@ -30,7 +30,7 @@ final class Helper
         $value = $args[$name] ?? null;
 
         if ($required) {
-            Assert::notEmpty($value);
+            Assert::notEmpty($value, "{$name} must not be empty");
         }
 
         return $value;

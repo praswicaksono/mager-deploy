@@ -11,6 +11,8 @@ use App\Component\Server\Task\DockerNodeList;
 use App\Component\Server\Task\DockerServiceList;
 use App\Component\Server\Task\Param;
 use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Process\Process;
 
 final class Server
 {
@@ -74,5 +76,16 @@ final class Server
         }
 
         return true;
+    }
+
+    public function showOutput(SymfonyStyle $io): callable
+    {
+        return function (string $type, string $buffer) use ($io) {
+            if ($type === Process::ERR) {
+                $io->warning($buffer);
+            } else {
+                $io->write($buffer);
+            }
+        };
     }
 }

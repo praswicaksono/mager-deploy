@@ -22,13 +22,14 @@ use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Process\Process;
 
+use Webmozart\Assert\Assert;
 use function Amp\async;
 
 #[AsCommand(
     name: 'mager:init',
     description: 'Add a short description for your command',
 )]
-class MagerInitCommand extends Command
+final class MagerInitCommand extends Command
 {
     private const TRAEFIK_DASHBOARD_NAME = 'magerdashboard';
 
@@ -74,28 +75,24 @@ class MagerInitCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         $isLocal = $input->getOption('local') ?? false;
-        $namespace = $input->getOption('namespace') ?? 'mager';
+        $namespace = $input->getOption('namespace') ?? null;
         $debug = $input->getOption('debug') ?? false;
         $noProxy = $input->getOption('no-proxy') ?? false;
 
+        if (!$isLocal) {
+            Assert::notEmpty($namespace, '--namespace must be a non-empty string');
+        } else {
+            $namespace = 'local';
+        }
+
+        // set default value for local server
         $managerIp = '127.0.0.1';
-
-        $onProgress = function (string $type, string $buffer) use ($io, $debug) {
-            if ($debug) {
-                if ($type === Process::ERR) {
-                    $io->warning($buffer);
-                } else {
-                    $io->write($buffer);
-                }
-            }
-        };
-
-        $this->config->set(Config::NAMESPACE, $namespace);
-        $this->config->set(Config::DEBUG, $debug);
-        $this->config->set(Config::IS_LOCAL, $isLocal);
         $proxyDashboard = 'dashboard.traefik.wip';
         $proxyUser = 'admin';
         $proxyPassword = 'admin123';
+        $sshUser = null;
+        $sshPort = null;
+        $sshKeyPath = null;
 
         if (!$isLocal) {
             $managerIp = $io->askQuestion(new Question('Please enter your manager ip: ', '127.0.0.1'));
@@ -105,66 +102,74 @@ class MagerInitCommand extends Command
             $proxyDashboard = $io->askQuestion(new Question('Please enter proxy dashboard url:', 'dashboard.traefik.wip'));
             $proxyUser = $io->askQuestion(new Question('Please enter proxy user:', 'admin'));
             $proxyPassword = $io->askQuestion(new Question('Please enter proxy password:', 'admin123'));
-
-            $this->config->set('remote.0.manager_ip', $managerIp);
-            $this->config->set('remote.0.ssh_user', $sshUser);
-            $this->config->set('remote.0.ssh_port', (int) $sshPort);
-            $this->config->set('remote.0.ssh_key_path', $sshKeyPath);
         }
 
-        $this->config->set(Config::PROXY_DASHBOARD, $proxyDashboard);
-        $this->config->set(Config::PROXY_USER, $proxyUser);
-        $this->config->set(Config::PROXY_PASSWORD, Encryption::Htpasswd($proxyPassword));
+        $this->config->set("server.{$namespace}.manager_ip", $managerIp);
+        $this->config->set("server.{$namespace}.ssh_user", $sshUser);
+        $this->config->set("server.{$namespace}.ssh_port", (int) $sshPort);
+        $this->config->set("server.{$namespace}.ssh_key_path", $sshKeyPath);
+        $this->config->set("server.{$namespace}.namespace", $namespace);
+        $this->config->set("server.{$namespace}.debug", $debug);
+        $this->config->set("server.{$namespace}.proxy_dashboard", $proxyDashboard);
+        $this->config->set("server.{$namespace}.proxy_user", $proxyUser);
+        $this->config->set("server.{$namespace}.proxy_password", Encryption::Htpasswd($proxyPassword));
+        $this->config->set("server.{$namespace}.is_local", $isLocal);
+        $this->config->set("server.{$namespace}.network", "{$namespace}-main");
 
         $this->config->save();
 
-        $executor = (new ExecutorFactory($this->config))();
+        $executor = (new ExecutorFactory($this->config))($namespace);
 
-        $helper = Server::withExecutor($executor);
+        $server = Server::withExecutor($executor);
 
-        if (!$helper->isDockerSwarmEnabled()) {
-            async(function() use ($executor, $managerIp, $onProgress) {
+        $showOutput = null;
+        if ($debug) {
+            $showOutput = $server->showOutput($io);
+        }
+
+        if (!$server->isDockerSwarmEnabled()) {
+            async(function() use ($executor, $managerIp, $showOutput) {
                 $executor->run(
                     DockerSwarmInit::class,
                     [
                         Param::DOCKER_SWARM_MANAGER_IP->value => $managerIp
                     ],
-                    $onProgress
+                    $showOutput
                 );
             })->await();
         }
 
-        $io->text('Configuring Mager network ...');
-        async(function () use ($helper, $namespace, $onProgress) {
-            $helper->exec(
+        $io->info('Configuring Mager network ...');
+        async(function () use ($server, $namespace, $showOutput) {
+            $server->exec(
                 DockerNetworkCreate::class,
                 [
                     Param::DOCKER_NETWORK_CREATE_DRIVER->value => 'overlay',
                     Param::GLOBAL_NAMESPACE->value => $namespace,
                     Param::DOCKER_NETWORK_NAME->value => 'main',
                 ],
-                $onProgress,
+                $showOutput,
                 continueOnError: true
             );
         })->await();
 
-        if (!$noProxy) {
-            $io->text('Setup proxy volume ...');
-            async(function () use ($helper, $namespace, $onProgress) {
-                $helper->exec(
+        if (! $noProxy) {
+            $io->info('Setup proxy volume ...');
+            async(function () use ($server, $namespace, $showOutput) {
+                $server->exec(
                     DockerVolumeCreate::class,
                     [
                         Param::GLOBAL_NAMESPACE->value => $namespace,
                         Param::DOCKER_VOLUME_NAME->value => 'proxy_letsencrypt',
                     ],
-                    $onProgress,
+                    $showOutput,
                     continueOnError: true
                 );
             })->await();
 
-            $io->text('Configuring Mager proxy ...');
-            async(function () use ($helper, $namespace, $onProgress, $isLocal) {
-                if (! $helper->isProxyRunning($namespace)) {
+            $io->info('Configuring Mager proxy ...');
+            async(function () use ($server, $namespace, $showOutput, $isLocal) {
+                if (! $server->isProxyRunning($namespace)) {
                     $sslSetup = [
                         '--entrypoints.web.http.redirections.entrypoint.to=websecure',
                         '--entryPoints.web.http.redirections.entrypoint.scheme=https',
@@ -189,7 +194,7 @@ class MagerInitCommand extends Command
                         $command = array_merge($sslSetup, $command);
                     }
 
-                    $helper->exec(
+                    $server->exec(
                         DockerServiceCreate::class, [
                         Param::GLOBAL_NAMESPACE->value => $namespace,
                         Param::DOCKER_SERVICE_IMAGE->value => 'traefik:v3.2',
@@ -199,11 +204,11 @@ class MagerInitCommand extends Command
                         Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['80:80', '443:443', '8080:8080'],
                         Param::DOCKER_SERVICE_LABEL->value => [
                             'traefik.enable=true',
-                            Traefik::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->get(Config::PROXY_DASHBOARD)),
+                            Traefik::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->get("server.{$namespace}.proxy_dashboard")),
                             Traefik::port(self::TRAEFIK_DASHBOARD_NAME, 80),
                             'traefik.http.routers.mydashboard.service=api@internal',
                             'traefik.http.routers.mydashboard.middlewares=dashboardauth',
-                            "traefik.http.middlewares.dashboardauth.basicauth.users={$this->config->get('proxy_user')}:{$this->config->get('proxy_password')}",
+                            "traefik.http.middlewares.dashboardauth.basicauth.users={$this->config->get("server.{$namespace}.proxy_user")}:{$this->config->get("server.{$namespace}.proxy_password")}",
                         ],
                         Param::DOCKER_SERVICE_MOUNT->value => [
                             'type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock',
@@ -211,23 +216,23 @@ class MagerInitCommand extends Command
                         ],
                         Param::DOCKER_SERVICE_COMMAND->value => implode(' ', $command),
                     ],
-                        $onProgress
+                        $showOutput
                     );
                 }
             })->await();
 
             if ($isLocal) {
-                $io->text('Setup proxy auto config ...');
-                async(function () use ($helper, $namespace, $onProgress) {
-                    $helper->exec(
+                $io->info('Setup proxy auto config ...');
+                async(function () use ($server, $namespace, $showOutput) {
+                    $server->exec(
                         AddProxyAutoConfiguration::class
                     );
                 })->await();
 
                 $io->text('Install local proxy for custom tld ...');
-                async(function() use ($helper, $namespace, $onProgress) {
-                    if (! $helper->isProxyAutoConfigRunning($namespace)) {
-                        $helper->exec(
+                async(function() use ($server, $namespace, $showOutput) {
+                    if (! $server->isProxyAutoConfigRunning($namespace)) {
+                        $server->exec(
                             DockerServiceCreate::class, [
                             Param::GLOBAL_NAMESPACE->value => $namespace,
                             Param::DOCKER_SERVICE_IMAGE->value => 'nginx',
@@ -238,7 +243,7 @@ class MagerInitCommand extends Command
                             Param::DOCKER_SERVICE_LABEL->value => Traefik::enable(),
                             Param::DOCKER_SERVICE_MOUNT->value => ['type=bind,source=/home/jowy/.mager/proxy.pac,destination=/usr/share/nginx/html/proxy.pac'],
                         ],
-                            $onProgress
+                            $showOutput
                         );
                     }
                 })->await();

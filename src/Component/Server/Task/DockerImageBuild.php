@@ -12,22 +12,22 @@ final class DockerImageBuild implements TaskInterface
     public static function exec(array $args = []): array
     {
         $tag = Helper::getArg(Param::DOCKER_IMAGE_TAG->value, $args);
-        $target = Helper::getArg(Param::DOCKER_IMAGE_TARGET->value, $args) ?? null;
-        $output = Helper::getArg(Param::DOCKER_IMAGE_OUTPUT->value, $args) ?? null;
+        $target = Helper::getArg(Param::DOCKER_IMAGE_TARGET->value, $args, required: false) ?? null;
+        $output = Helper::getArg(Param::DOCKER_IMAGE_OUTPUT->value, $args, required: false) ?? null;
 
 
         $cmd = ['docker', 'buildx', 'build'];
-        $cmd[] = ['--tag', $tag];
+        $cmd[] = "--tag {$tag}";
 
         if ($target !== null) {
-            $cmd[] = ['--target', $target];
+            $cmd[] = "--target {$target}";
         }
 
         if ($output !== null) {
-            $cmd[] = ['--output', $output];
+            $cmd[] = "--output {$output}";
         }
 
-        $cmd[] = ['.'];
+        $cmd[] = '.';
 
         return [
             implode(' ', $cmd)

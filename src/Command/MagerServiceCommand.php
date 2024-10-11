@@ -4,14 +4,18 @@ namespace App\Command;
 
 use App\Component\Config\Config;
 use App\Component\Server\Docker\DockerService;
+use App\Component\Server\ExecutorFactory;
 use App\Component\Server\ExecutorInterface;
+use App\Component\Server\Result;
 use App\Component\Server\Task\DockerServiceList;
+use App\Helper\Server;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use function Amp\async;
 
 #[AsCommand(
     name: 'mager:service',
@@ -20,8 +24,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 final class MagerServiceCommand extends Command
 {
     public function __construct(
-        private readonly Config $config,
-        private readonly ExecutorInterface $executor
+        private readonly Config $config
     ) {
         parent::__construct();
     }
@@ -35,10 +38,15 @@ final class MagerServiceCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $namespace = $this->config->get(Config::NAMESPACE);
+        $namespace = 'local';
+        $executor = (new ExecutorFactory($this->config))($namespace);
+        $server = Server::withExecutor($executor);
 
-        /** @var ArrayCollection<DockerService> $result */
-        $result = $this->executor->run(DockerServiceList::class)->data;
+        /** @var Result<ArrayCollection<DockerService>> $result */
+        $result = async(function () use ($server, $namespace) {
+            return $server->exec(DockerServiceList::class);
+        })->await();
+        $result = $result->data;
 
         $table = $io->createTable();
         $table->setHeaders(['ID', 'Namespace', 'App', 'Image', 'Ports']);;

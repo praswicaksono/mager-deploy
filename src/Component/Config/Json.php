@@ -5,6 +5,8 @@ namespace App\Component\Config;
 
 use Adbar\Dot;
 
+use function Amp\File\createDirectory;
+use function Amp\File\exists;
 use function Amp\File\write;
 use function Amp\File\read;
 
@@ -19,8 +21,8 @@ final class Json implements Config
         $object = new self();
 
         $dir = str_replace('/config.json', '', $path);
-        if (! is_dir($dir)) {
-            mkdir($dir, 0755);
+        if (! exists($dir)) {
+            createDirectory($dir, 0755);
         }
 
         touch($path);
