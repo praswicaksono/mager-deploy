@@ -4,7 +4,6 @@ namespace App\Command;
 
 use App\Component\Config\Config;
 use App\Component\Server\ExecutorFactory;
-use App\Component\Server\ExecutorInterface;
 use App\Component\Server\Task\DockerImageBuild;
 use App\Component\Server\Task\Param;
 use App\Helper\Server;
@@ -58,18 +57,16 @@ final class MagerBuildCommand extends Command
         Assert::notEmpty($namespace, '--namespace must be a non-empty string');
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
 
-        $cwd = getcwd();
-        $cwdArr = explode('/', $cwd);
+        $executor = (new ExecutorFactory($this->config))($namespace);
+        $server = Server::withExecutor($executor);
 
-        $name = end($cwdArr);
+        [$name, $cwd] = $server->getAppNameAndCwd();
         $dockerfile = $cwd . DIRECTORY_SEPARATOR . 'Dockerfile';
 
         if (! exists($dockerfile)) {
             $io->error('Dockerfile does not exist');
+            return Command::FAILURE;
         }
-
-        $executor = (new ExecutorFactory($this->config))($namespace);
-        $server = Server::withExecutor($executor);
 
         $progress = new ProgressIndicator($output);
         $showOutput = $server->showOutput($io, $config['debug'], $progress);

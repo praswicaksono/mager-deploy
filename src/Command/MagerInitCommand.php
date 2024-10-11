@@ -79,6 +79,7 @@ final class MagerInitCommand extends Command
         $namespace = $input->getOption('namespace') ?? null;
         $debug = $input->getOption('debug') ?? false;
         $noProxy = $input->getOption('no-proxy') ?? false;
+        $globalNetwork = 'mager-global';
 
         if (!$isLocal) {
             Assert::notEmpty($namespace, '--namespace must be a non-empty string');
@@ -116,6 +117,8 @@ final class MagerInitCommand extends Command
         $this->config->set("server.{$namespace}.proxy_password", Encryption::Htpasswd($proxyPassword));
         $this->config->set("server.{$namespace}.is_local", $isLocal);
         $this->config->set("server.{$namespace}.network", "{$namespace}-main");
+        $this->config->set("server.{$namespace}.is_single_server", "true");
+        $this->config->set('global_network', $globalNetwork);
 
         $this->config->save();
 
@@ -139,13 +142,23 @@ final class MagerInitCommand extends Command
             })->await();
         }
 
-        async(function () use ($server, $namespace, $showOutput) {
+        async(function () use ($server, $namespace, $showOutput, $globalNetwork) {
             $server->exec(
                 DockerNetworkCreate::class,
                 [
                     Param::DOCKER_NETWORK_CREATE_DRIVER->value => 'overlay',
                     Param::GLOBAL_NAMESPACE->value => $namespace,
                     Param::DOCKER_NETWORK_NAME->value => 'main',
+                ],
+                $showOutput,
+                continueOnError: true
+            );
+
+            $server->exec(
+                DockerNetworkCreate::class,
+                [
+                    Param::DOCKER_NETWORK_CREATE_DRIVER->value => 'overlay',
+                    Param::DOCKER_NETWORK_NAME->value => $globalNetwork,
                 ],
                 $showOutput,
                 continueOnError: true

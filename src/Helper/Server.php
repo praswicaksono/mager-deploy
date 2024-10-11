@@ -91,4 +91,12 @@ final class Server
             }
         };
     }
+
+    public function getAppNameAndCwd(): array
+    {
+        $cwd = getcwd();
+        $cwdArr = explode('/', $cwd);
+
+        return [end($cwdArr), $cwd];
+    }
 }
