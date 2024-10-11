@@ -11,6 +11,8 @@ use App\Component\Server\Task\DockerNodeList;
 use App\Component\Server\Task\DockerServiceList;
 use App\Component\Server\Task\Param;
 use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Process\Process;
 
@@ -78,13 +80,14 @@ final class Server
         return true;
     }
 
-    public function showOutput(SymfonyStyle $io): callable
+    public function showOutput(SymfonyStyle $io, bool $debug, ProgressIndicator $progress): callable
     {
-        return function (string $type, string $buffer) use ($io) {
+        return function (string $type, string $buffer) use ($io, $debug, $progress) {
             if ($type === Process::ERR) {
-                $io->warning($buffer);
+                if ($debug) $io->warning($buffer);
             } else {
-                $io->write($buffer);
+                $progress->advance();
+                if ($debug) $io->write($buffer);
             }
         };
     }

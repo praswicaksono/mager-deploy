@@ -15,6 +15,7 @@ use App\Helper\Server;
 use App\Helper\Traefik;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -122,10 +123,9 @@ final class MagerInitCommand extends Command
 
         $server = Server::withExecutor($executor);
 
-        $showOutput = null;
-        if ($debug) {
-            $showOutput = $server->showOutput($io);
-        }
+        $progress = new ProgressIndicator($io);
+        $progress->start('Initializing Mager...');
+        $showOutput = $server->showOutput($io, $debug, $progress);
 
         if (!$server->isDockerSwarmEnabled()) {
             async(function() use ($executor, $managerIp, $showOutput) {
@@ -139,7 +139,6 @@ final class MagerInitCommand extends Command
             })->await();
         }
 
-        $io->info('Configuring Mager network ...');
         async(function () use ($server, $namespace, $showOutput) {
             $server->exec(
                 DockerNetworkCreate::class,
@@ -154,7 +153,6 @@ final class MagerInitCommand extends Command
         })->await();
 
         if (! $noProxy) {
-            $io->info('Setup proxy volume ...');
             async(function () use ($server, $namespace, $showOutput) {
                 $server->exec(
                     DockerVolumeCreate::class,
@@ -167,7 +165,6 @@ final class MagerInitCommand extends Command
                 );
             })->await();
 
-            $io->info('Configuring Mager proxy ...');
             async(function () use ($server, $namespace, $showOutput, $isLocal) {
                 if (! $server->isProxyRunning($namespace)) {
                     $sslSetup = [
@@ -222,14 +219,12 @@ final class MagerInitCommand extends Command
             })->await();
 
             if ($isLocal) {
-                $io->info('Setup proxy auto config ...');
                 async(function () use ($server, $namespace, $showOutput) {
                     $server->exec(
                         AddProxyAutoConfiguration::class
                     );
                 })->await();
 
-                $io->text('Install local proxy for custom tld ...');
                 async(function() use ($server, $namespace, $showOutput) {
                     if (! $server->isProxyAutoConfigRunning($namespace)) {
                         $server->exec(
@@ -250,6 +245,7 @@ final class MagerInitCommand extends Command
             }
         }
 
+        $progress->finish('Initialization completed');
         $io->success('All Is Done ! Happy Developing !');
 
         return Command::SUCCESS;
