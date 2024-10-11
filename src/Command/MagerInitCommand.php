@@ -102,7 +102,7 @@ class MagerInitCommand extends Command
 
         $this->config->set('proxy_dashboard', $proxyDashboard);
         $this->config->set('proxy_user', $proxyUser);
-        $this->config->set('proxy_password', Encryption::htpasswd($proxyPassword));
+        $this->config->set('proxy_password', Encryption::Htpasswd($proxyPassword));
 
         $this->config->save();
 
