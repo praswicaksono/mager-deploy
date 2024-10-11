@@ -67,7 +67,7 @@ final class MagerInitCommand extends Command
             'namespace',
             null,
             InputOption::VALUE_OPTIONAL,
-            'Namespace for multi tenant setup, default value will be "mager"'
+            'Create namespace for the project'
         );
     }
 

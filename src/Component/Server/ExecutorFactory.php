@@ -5,6 +5,7 @@ namespace App\Component\Server;
 
 use App\Component\Config\Config;
 use Spatie\Ssh\Ssh;
+use Webmozart\Assert\Assert;
 
 final readonly class ExecutorFactory
 {
@@ -15,16 +16,18 @@ final readonly class ExecutorFactory
 
     public function __invoke(string $namespace): ExecutorInterface
     {
-        $debug = $this->config->get("server.{$namespace}.debug", false);
+        $config = $this->config->get("server.{$namespace}");
+
+        $debug = $config['debug'];
         $executor = new LocalExecutor($debug);
 
-        if (! $this->config->get("server.{$namespace}.is_local", true)) {
+        if (! $config['is_local']) {
             $ssh = Ssh::create(
-                $this->config->get("server.{$namespace}.ssh_user"),
-                $this->config->get("server.{$namespace}.manager_ip")
+                $config['ssh_user'],
+                $config['manager_ip']
             )->disablePasswordAuthentication()
-                ->usePort($this->config->get("server.{$namespace}.ssh_port"))
-                ->usePrivateKey($this->config->get("server.{$namespace}.ssh_key_path"))
+                ->usePort($config['port'])
+                ->usePrivateKey($config['ssh_key_path'])
                 ->disableStrictHostKeyChecking()
                 ->disablePasswordAuthentication()
                 ->setTimeout(60 * 30);

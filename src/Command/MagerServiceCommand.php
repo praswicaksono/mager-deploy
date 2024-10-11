@@ -13,8 +13,10 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Webmozart\Assert\Assert;
 use function Amp\async;
 
 #[AsCommand(
@@ -31,14 +33,25 @@ final class MagerServiceCommand extends Command
 
     protected function configure(): void
     {
-
+        $this->addOption(
+            'namespace',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'Create namespace for the project'
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
 
-        $namespace = 'local';
+        $namespace = $input->getOption('namespace') ?? null;
+        $config = $this->config->get("server.{$namespace}");
+
+        Assert::notEmpty($namespace, '--namespace must be a non-empty string');
+        Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
+
+
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor);
 
@@ -52,6 +65,10 @@ final class MagerServiceCommand extends Command
         $table->setHeaders(['ID', 'Namespace', 'App', 'Image', 'Ports']);;
 
         foreach ($result as $service) {
+            if (str_ends_with($service->name, 'mager_proxy') || str_ends_with($service->name, 'mager_pac')) {
+                continue;
+            }
+
             $table->addRow(
                 [
                     $service->id,
