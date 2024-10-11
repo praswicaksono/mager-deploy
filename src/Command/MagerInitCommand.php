@@ -12,6 +12,7 @@ use App\Component\Server\Task\DockerVolumeCreate;
 use App\Component\Server\Task\Param;
 use App\Helper\Encryption;
 use App\Helper\Server;
+use App\Helper\Traefik;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -29,6 +30,8 @@ use function Amp\async;
 )]
 class MagerInitCommand extends Command
 {
+    private const TRAEFIK_DASHBOARD_NAME = 'magerdashboard';
+
     public function __construct(
         private readonly ConfigInterface $config
     ) {
@@ -186,9 +189,9 @@ class MagerInitCommand extends Command
                         Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['80:80', '443:443', '8080:8080'],
                         Param::DOCKER_SERVICE_LABEL->value => [
                             'traefik.enable=true',
-                            "'traefik.http.routers.mydashboard.rule=Host(`{$this->config->get('proxy_dashboard')}`)'",
+                            Traefik::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->get('proxy_dashboard')),
+                            Traefik::port(self::TRAEFIK_DASHBOARD_NAME, 80),
                             'traefik.http.routers.mydashboard.service=api@internal',
-                            'traefik.http.services.mydashboard.loadbalancer.server.port=80',
                             'traefik.http.routers.mydashboard.middlewares=dashboardauth',
                             "traefik.http.middlewares.dashboardauth.basicauth.users={$this->config->get('proxy_user')}:{$this->config->get('proxy_password')}",
                         ],
@@ -222,9 +225,7 @@ class MagerInitCommand extends Command
                             Param::DOCKER_SERVICE_NETWORK->value => ["{$namespace}-main"],
                             Param::DOCKER_SERVICE_CONSTRAINTS->value => ['node.role==manager'],
                             Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['7000:80'],
-                            Param::DOCKER_SERVICE_LABEL->value => [
-                                'traefik.enable=false',
-                            ],
+                            Param::DOCKER_SERVICE_LABEL->value => Traefik::enable(),
                             Param::DOCKER_SERVICE_MOUNT->value => ['type=bind,source=/home/jowy/.mager/proxy.pac,destination=/usr/share/nginx/html/proxy.pac'],
                         ],
                         $onProgress
