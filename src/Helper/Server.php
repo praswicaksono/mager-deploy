@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Helper;
@@ -11,7 +12,6 @@ use App\Component\Server\Task\DockerNodeList;
 use App\Component\Server\Task\DockerServiceList;
 use App\Component\Server\Task\Param;
 use Doctrine\Common\Collections\ArrayCollection;
-use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Process\Process;
@@ -56,7 +56,7 @@ final class Server
     {
         /** @var Result<ArrayCollection<DockerService>> $res */
         $res = $this->executor->run(DockerServiceList::class, [
-            Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$namespace}-mager_proxy"]
+            Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$namespace}-mager_proxy"],
         ]);
 
         if ($res->data->isEmpty()) {
@@ -70,7 +70,7 @@ final class Server
     {
         /** @var Result<ArrayCollection<DockerService>> $res */
         $res = $this->executor->run(DockerServiceList::class, [
-            Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$namespace}-mager_pac"]
+            Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$namespace}-mager_pac"],
         ]);
 
         if ($res->data->isEmpty()) {
@@ -83,11 +83,15 @@ final class Server
     public function showOutput(SymfonyStyle $io, bool $debug, ProgressIndicator $progress): callable
     {
         return function (string $type, string $buffer) use ($io, $debug, $progress) {
-            if ($type === Process::ERR) {
-                if ($debug) $io->warning($buffer);
+            if (Process::ERR === $type) {
+                if ($debug) {
+                    $io->warning($buffer);
+                }
             } else {
                 $progress->advance();
-                if ($debug) $io->write($buffer);
+                if ($debug) {
+                    $io->write($buffer);
+                }
             }
         };
     }

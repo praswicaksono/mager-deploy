@@ -1,18 +1,15 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server;
 
 use App\Component\Config\Config;
 use Spatie\Ssh\Ssh;
-use Webmozart\Assert\Assert;
 
 final readonly class ExecutorFactory
 {
-    public function __construct(private Config $config)
-    {
-
-    }
+    public function __construct(private Config $config) {}
 
     public function __invoke(string $namespace): ExecutorInterface
     {
@@ -24,7 +21,7 @@ final readonly class ExecutorFactory
         if (! $config['is_local']) {
             $ssh = Ssh::create(
                 $config['ssh_user'],
-                $config['manager_ip']
+                $config['manager_ip'],
             )->disablePasswordAuthentication()
                 ->usePort($config['port'])
                 ->usePrivateKey($config['ssh_key_path'])

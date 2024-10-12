@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server\Task;
@@ -23,12 +24,12 @@ final class DockerNodeUpdate implements TaskInterface
         $cmd = Helper::buildOptions('--label-add', $addLabel, $cmd);
         $cmd = Helper::buildOptions('--label-rm', $removeLabel, $cmd);
 
-        if ($role !== null) {
+        if (null !== $role) {
             Assert::inArray($role, ['worker', 'manager']);
             $cmd[] = "--role {$role}";
         }
 
-        if ($availability !== null) {
+        if (null !== $availability) {
             Assert::inArray($availability, ['active', 'pause', 'drain']);
             $cmd[] = "--availability {$availability}";
         }
@@ -41,7 +42,7 @@ final class DockerNodeUpdate implements TaskInterface
 
     public function result(int $statusCode, string $out, string $err): ?object
     {
-        if ($statusCode != 0) {
+        if (0 != $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 

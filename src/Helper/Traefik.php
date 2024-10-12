@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Helper;
@@ -21,7 +22,7 @@ final class Traefik
     {
         if (null === $name && null === $host && null === $port) {
             return [
-                'traefik.enable=false'
+                'traefik.enable=false',
             ];
         }
 
@@ -32,7 +33,7 @@ final class Traefik
         return [
             'traefik.enable=true',
             self::host($name, $host),
-            self::port($name, $port)
+            self::port($name, $port),
         ];
     }
 }

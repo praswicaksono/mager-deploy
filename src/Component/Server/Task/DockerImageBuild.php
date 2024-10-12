@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server\Task;
@@ -19,24 +20,24 @@ final class DockerImageBuild implements TaskInterface
         $cmd = ['docker', 'buildx', 'build'];
         $cmd[] = "--tag {$tag}";
 
-        if ($target !== null) {
+        if (null !== $target) {
             $cmd[] = "--target {$target}";
         }
 
-        if ($output !== null) {
+        if (null !== $output) {
             $cmd[] = "--output {$output}";
         }
 
         $cmd[] = '.';
 
         return [
-            implode(' ', $cmd)
+            implode(' ', $cmd),
         ];
     }
 
     public function result(int $statusCode, string $out, string $err): ?object
     {
-        if ($statusCode !== 0) {
+        if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 

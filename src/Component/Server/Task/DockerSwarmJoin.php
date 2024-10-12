@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server\Task;
@@ -17,13 +18,13 @@ final class DockerSwarmJoin implements TaskInterface
         $managerIp = $args[Param::DOCKER_SWARM_MANAGER_IP->value];
 
         return [
-            "docker swarm join --token {$token} {$managerIp}:2377"
+            "docker swarm join --token {$token} {$managerIp}:2377",
         ];
     }
 
     public function result(int $statusCode, string $out, string $err): ?object
     {
-        if ($statusCode !== 0) {
+        if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 

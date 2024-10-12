@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server\Task;
@@ -20,13 +21,13 @@ final class DockerNetworkCreate implements TaskInterface
         }
 
         return [
-            "docker network create --scope=swarm -d {$driver} {$name}"
+            "docker network create --scope=swarm -d {$driver} {$name}",
         ];
     }
 
     public function result(int $statusCode, string $out, string $err): ?object
     {
-        if ($statusCode !== 0) {
+        if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 

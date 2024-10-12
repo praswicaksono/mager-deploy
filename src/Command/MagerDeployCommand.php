@@ -4,7 +4,6 @@ namespace App\Command;
 
 use App\Component\Config\Config;
 use App\Component\Server\ExecutorFactory;
-use App\Component\Server\ExecutorInterface;
 use App\Component\Server\Task\DockerServiceCreate;
 use App\Component\Server\Task\Param;
 use App\Helper\Server;
@@ -36,14 +35,14 @@ final class MagerDeployCommand extends Command
             'domain',
             null,
             InputOption::VALUE_REQUIRED,
-            'Domain name of app e.g app-name.com'
+            'Domain name of app e.g app-name.com',
         );
 
         $this->addOption(
             'port',
             null,
             InputOption::VALUE_REQUIRED,
-            'Port that exposed by container'
+            'Port that exposed by container',
         );
     }
 
@@ -88,9 +87,9 @@ final class MagerDeployCommand extends Command
                 Param::DOCKER_SERVICE_LABEL->value => Traefik::enable(
                     "{$namespace}-{$name}",
                     $domain,
-                    $port
-                )
-            ]
+                    $port,
+                ),
+            ],
         );
 
         $io->success('You have a new command! Now make it your own! Pass --help to see your options.');

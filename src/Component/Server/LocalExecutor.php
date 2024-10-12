@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server;
@@ -7,13 +8,8 @@ use Symfony\Component\Process\Process;
 
 final class LocalExecutor implements ExecutorInterface
 {
-    public function __construct(private readonly bool $debug = false)
-    {
-    }
+    public function __construct(private readonly bool $debug = false) {}
 
-    /**
-     * @inheritDoc
-     */
     public function run(string $task, array $args = [], ?callable $onProgress = null): Result
     {
         $command = implode(PHP_EOL, $task::exec($args));
@@ -30,8 +26,8 @@ final class LocalExecutor implements ExecutorInterface
 
         $process->wait(function (string $type, string $buffer) use ($out, $err, $onProgress, $process) {
             match (true) {
-                $type == Process::OUT => fwrite($out, $buffer),
-                $type == Process::ERR => fwrite($err, $buffer),
+                Process::OUT == $type => fwrite($out, $buffer),
+                Process::ERR == $type => fwrite($err, $buffer),
             };
             if (is_callable($onProgress)) {
                 $onProgress($type, $buffer);
@@ -48,6 +44,6 @@ final class LocalExecutor implements ExecutorInterface
         fclose($out);
         fclose($err);
 
-        return new Result((new $task)->result($process->getExitCode(), $outBuffer, $errBuffer));
+        return new Result((new $task())->result($process->getExitCode(), $outBuffer, $errBuffer));
     }
 }

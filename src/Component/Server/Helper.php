@@ -1,18 +1,17 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Symfony\Component\Dotenv\Dotenv;
 use Webmozart\Assert\Assert;
-
-use function Amp\File\read;
 
 final class Helper
 {
-    public static function buildOptions(string $options, array $args, array $cmd): array {
+    public static function buildOptions(string $options, array $args, array $cmd): array
+    {
         foreach ($args as $key => $value) {
             $cmd[] = $options;
             if (is_int($key) && !empty($value)) {

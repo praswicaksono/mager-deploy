@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server\Task;
@@ -11,13 +12,13 @@ final class DockerSwarmLeave implements TaskInterface
     public static function exec(array $args = []): array
     {
         return [
-            'docker swarm leave --force'
+            'docker swarm leave --force',
         ];
     }
 
     public function result(int $statusCode, string $out, string $err): ?object
     {
-        if ($statusCode !== 0) {
+        if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 

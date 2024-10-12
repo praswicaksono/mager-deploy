@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server\Task;
@@ -21,7 +22,7 @@ final class DockerSaveImage implements TaskInterface
 
     public function result(int $statusCode, string $out, string $err): ?object
     {
-        if ($statusCode !== 0) {
+        if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 

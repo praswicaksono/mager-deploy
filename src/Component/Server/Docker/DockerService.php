@@ -10,9 +10,8 @@ final class DockerService
         public readonly string $mode,
         public readonly string $name,
         public readonly string $ports,
-        public readonly string $replicas
-    ) {
-    }
+        public readonly string $replicas,
+    ) {}
 
     public static function fromJsonString(string $json): DockerService
     {
@@ -24,7 +23,7 @@ final class DockerService
             mode: $array['Mode'],
             name: $array['Name'],
             ports: $array['Ports'],
-            replicas: $array['Replicas']
+            replicas: $array['Replicas'],
         );
     }
 }

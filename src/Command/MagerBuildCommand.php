@@ -15,6 +15,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Webmozart\Assert\Assert;
+
 use function Amp\File\exists;
 
 #[AsCommand(
@@ -24,7 +25,7 @@ use function Amp\File\exists;
 final class MagerBuildCommand extends Command
 {
     public function __construct(
-        private readonly Config $config
+        private readonly Config $config,
     ) {
         parent::__construct();
     }
@@ -35,14 +36,14 @@ final class MagerBuildCommand extends Command
             'namespace',
             null,
             InputOption::VALUE_REQUIRED,
-            'Create namespace for the project'
+            'Create namespace for the project',
         );
 
         $this->addOption(
             'version',
             null,
             InputOption::VALUE_REQUIRED,
-            'Version of current build'
+            'Version of current build',
         );
     }
 
@@ -65,6 +66,7 @@ final class MagerBuildCommand extends Command
 
         if (! exists($dockerfile)) {
             $io->error('Dockerfile does not exist');
+
             return Command::FAILURE;
         }
 
@@ -75,9 +77,9 @@ final class MagerBuildCommand extends Command
         $server->exec(
             DockerImageBuild::class,
             [
-                Param::DOCKER_IMAGE_TAG->value => "mgr.la/{$namespace}-{$name}:{$version}"
+                Param::DOCKER_IMAGE_TAG->value => "mgr.la/{$namespace}-{$name}:{$version}",
             ],
-            $showOutput
+            $showOutput,
         );
         $progress->finish('Image has been built');
 

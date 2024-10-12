@@ -5,7 +5,6 @@ namespace App\Command;
 use App\Component\Config\Config;
 use App\Component\Server\Docker\DockerService;
 use App\Component\Server\ExecutorFactory;
-use App\Component\Server\ExecutorInterface;
 use App\Component\Server\Result;
 use App\Component\Server\Task\DockerServiceList;
 use App\Helper\Server;
@@ -17,6 +16,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Webmozart\Assert\Assert;
+
 use function Amp\async;
 
 #[AsCommand(
@@ -26,7 +26,7 @@ use function Amp\async;
 final class MagerServiceCommand extends Command
 {
     public function __construct(
-        private readonly Config $config
+        private readonly Config $config,
     ) {
         parent::__construct();
     }
@@ -37,7 +37,7 @@ final class MagerServiceCommand extends Command
             'namespace',
             null,
             InputOption::VALUE_REQUIRED,
-            'Create namespace for the project'
+            'Create namespace for the project',
         );
     }
 
@@ -55,13 +55,13 @@ final class MagerServiceCommand extends Command
         $server = Server::withExecutor($executor);
 
         /** @var Result<ArrayCollection<DockerService>> $result */
-        $result = async(function () use ($server, $namespace) {
+        $result = async(function () use ($server) {
             return $server->exec(DockerServiceList::class);
         })->await();
         $result = $result->data;
 
         $table = $io->createTable();
-        $table->setHeaders(['ID', 'Namespace', 'App', 'Image', 'Ports']);;
+        $table->setHeaders(['ID', 'Namespace', 'App', 'Image', 'Ports']);
 
         foreach ($result as $service) {
             if (str_ends_with($service->name, 'mager_proxy') || str_ends_with($service->name, 'mager_pac')) {
@@ -74,8 +74,8 @@ final class MagerServiceCommand extends Command
                     $namespace,
                     str_replace("{$namespace}-", '', $service->name),
                     $service->image,
-                    $service->ports
-                ]
+                    $service->ports,
+                ],
             );
         }
 

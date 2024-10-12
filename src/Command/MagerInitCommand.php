@@ -21,9 +21,8 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Process\Process;
-
 use Webmozart\Assert\Assert;
+
 use function Amp\async;
 
 #[AsCommand(
@@ -35,7 +34,7 @@ final class MagerInitCommand extends Command
     private const TRAEFIK_DASHBOARD_NAME = 'magerdashboard';
 
     public function __construct(
-        private readonly Config $config
+        private readonly Config $config,
     ) {
         parent::__construct();
     }
@@ -46,28 +45,28 @@ final class MagerInitCommand extends Command
             'local',
             null,
             InputOption::VALUE_NONE,
-            'Setup for mager for local development include proxy auto configuration'
+            'Setup for mager for local development include proxy auto configuration',
         );
 
         $this->addOption(
             'debug',
             null,
             InputOption::VALUE_NONE,
-            'Debug mode, will show all command output'
+            'Debug mode, will show all command output',
         );
 
         $this->addOption(
             'no-proxy',
             null,
             InputOption::VALUE_NONE,
-            'Dont install proxy'
+            'Dont install proxy',
         );
 
         $this->addOption(
             'namespace',
             null,
             InputOption::VALUE_OPTIONAL,
-            'Create namespace for the project'
+            'Create namespace for the project',
         );
     }
 
@@ -117,7 +116,7 @@ final class MagerInitCommand extends Command
         $this->config->set("server.{$namespace}.proxy_password", Encryption::Htpasswd($proxyPassword));
         $this->config->set("server.{$namespace}.is_local", $isLocal);
         $this->config->set("server.{$namespace}.network", "{$namespace}-main");
-        $this->config->set("server.{$namespace}.is_single_server", "true");
+        $this->config->set("server.{$namespace}.is_single_server", 'true');
         $this->config->set('global_network', $globalNetwork);
 
         $this->config->save();
@@ -131,13 +130,13 @@ final class MagerInitCommand extends Command
         $showOutput = $server->showOutput($io, $debug, $progress);
 
         if (!$server->isDockerSwarmEnabled()) {
-            async(function() use ($executor, $managerIp, $showOutput) {
+            async(function () use ($executor, $managerIp, $showOutput) {
                 $executor->run(
                     DockerSwarmInit::class,
                     [
-                        Param::DOCKER_SWARM_MANAGER_IP->value => $managerIp
+                        Param::DOCKER_SWARM_MANAGER_IP->value => $managerIp,
                     ],
-                    $showOutput
+                    $showOutput,
                 );
             })->await();
         }
@@ -151,7 +150,7 @@ final class MagerInitCommand extends Command
                     Param::DOCKER_NETWORK_NAME->value => 'main',
                 ],
                 $showOutput,
-                continueOnError: true
+                continueOnError: true,
             );
 
             $server->exec(
@@ -161,7 +160,7 @@ final class MagerInitCommand extends Command
                     Param::DOCKER_NETWORK_NAME->value => $globalNetwork,
                 ],
                 $showOutput,
-                continueOnError: true
+                continueOnError: true,
             );
         })->await();
 
@@ -174,7 +173,7 @@ final class MagerInitCommand extends Command
                         Param::DOCKER_VOLUME_NAME->value => 'proxy_letsencrypt',
                     ],
                     $showOutput,
-                    continueOnError: true
+                    continueOnError: true,
                 );
             })->await();
 
@@ -187,7 +186,7 @@ final class MagerInitCommand extends Command
                         '--entrypoints.websecure.http.tls.certresolver=mager',
                         '--certificatesresolvers.mager.acme.email=hello@praswicaksono.pw',
                         '--certificatesresolvers.mager.acme.tlschallenge=true',
-                        '--certificatesresolvers.mager.acme.storage=/letsencrypt/acme.json'
+                        '--certificatesresolvers.mager.acme.storage=/letsencrypt/acme.json',
                     ];
 
                     $command = [
@@ -205,53 +204,55 @@ final class MagerInitCommand extends Command
                     }
 
                     $server->exec(
-                        DockerServiceCreate::class, [
-                        Param::GLOBAL_NAMESPACE->value => $namespace,
-                        Param::DOCKER_SERVICE_IMAGE->value => 'traefik:v3.2',
-                        Param::DOCKER_SERVICE_NAME->value => 'mager_proxy',
-                        Param::DOCKER_SERVICE_NETWORK->value => ["{$namespace}-main", 'host'],
-                        Param::DOCKER_SERVICE_CONSTRAINTS->value => ['node.role==manager'],
-                        Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['80:80', '443:443', '8080:8080'],
-                        Param::DOCKER_SERVICE_LABEL->value => [
-                            'traefik.enable=true',
-                            Traefik::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->get("server.{$namespace}.proxy_dashboard")),
-                            Traefik::port(self::TRAEFIK_DASHBOARD_NAME, 80),
-                            'traefik.http.routers.mydashboard.service=api@internal',
-                            'traefik.http.routers.mydashboard.middlewares=dashboardauth',
-                            "traefik.http.middlewares.dashboardauth.basicauth.users={$this->config->get("server.{$namespace}.proxy_user")}:{$this->config->get("server.{$namespace}.proxy_password")}",
+                        DockerServiceCreate::class,
+                        [
+                            Param::GLOBAL_NAMESPACE->value => $namespace,
+                            Param::DOCKER_SERVICE_IMAGE->value => 'traefik:v3.2',
+                            Param::DOCKER_SERVICE_NAME->value => 'mager_proxy',
+                            Param::DOCKER_SERVICE_NETWORK->value => ["{$namespace}-main", 'host'],
+                            Param::DOCKER_SERVICE_CONSTRAINTS->value => ['node.role==manager'],
+                            Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['80:80', '443:443', '8080:8080'],
+                            Param::DOCKER_SERVICE_LABEL->value => [
+                                'traefik.enable=true',
+                                Traefik::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->get("server.{$namespace}.proxy_dashboard")),
+                                Traefik::port(self::TRAEFIK_DASHBOARD_NAME, 80),
+                                'traefik.http.routers.mydashboard.service=api@internal',
+                                'traefik.http.routers.mydashboard.middlewares=dashboardauth',
+                                "traefik.http.middlewares.dashboardauth.basicauth.users={$this->config->get("server.{$namespace}.proxy_user")}:{$this->config->get("server.{$namespace}.proxy_password")}",
+                            ],
+                            Param::DOCKER_SERVICE_MOUNT->value => [
+                                'type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock',
+                                "type=volume,source={$namespace}-proxy_letsencrypt,destination=/letsencrypt",
+                            ],
+                            Param::DOCKER_SERVICE_COMMAND->value => implode(' ', $command),
                         ],
-                        Param::DOCKER_SERVICE_MOUNT->value => [
-                            'type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock',
-                            "type=volume,source={$namespace}-proxy_letsencrypt,destination=/letsencrypt",
-                        ],
-                        Param::DOCKER_SERVICE_COMMAND->value => implode(' ', $command),
-                    ],
-                        $showOutput
+                        $showOutput,
                     );
                 }
             })->await();
 
             if ($isLocal) {
-                async(function () use ($server, $namespace, $showOutput) {
+                async(function () use ($server) {
                     $server->exec(
-                        AddProxyAutoConfiguration::class
+                        AddProxyAutoConfiguration::class,
                     );
                 })->await();
 
-                async(function() use ($server, $namespace, $showOutput) {
+                async(function () use ($server, $namespace, $showOutput) {
                     if (! $server->isProxyAutoConfigRunning($namespace)) {
                         $server->exec(
-                            DockerServiceCreate::class, [
-                            Param::GLOBAL_NAMESPACE->value => $namespace,
-                            Param::DOCKER_SERVICE_IMAGE->value => 'nginx',
-                            Param::DOCKER_SERVICE_NAME->value => 'mager_pac',
-                            Param::DOCKER_SERVICE_NETWORK->value => ["{$namespace}-main"],
-                            Param::DOCKER_SERVICE_CONSTRAINTS->value => ['node.role==manager'],
-                            Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['7000:80'],
-                            Param::DOCKER_SERVICE_LABEL->value => Traefik::enable(),
-                            Param::DOCKER_SERVICE_MOUNT->value => ['type=bind,source=/home/jowy/.mager/proxy.pac,destination=/usr/share/nginx/html/proxy.pac'],
-                        ],
-                            $showOutput
+                            DockerServiceCreate::class,
+                            [
+                                Param::GLOBAL_NAMESPACE->value => $namespace,
+                                Param::DOCKER_SERVICE_IMAGE->value => 'nginx',
+                                Param::DOCKER_SERVICE_NAME->value => 'mager_pac',
+                                Param::DOCKER_SERVICE_NETWORK->value => ["{$namespace}-main"],
+                                Param::DOCKER_SERVICE_CONSTRAINTS->value => ['node.role==manager'],
+                                Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['7000:80'],
+                                Param::DOCKER_SERVICE_LABEL->value => Traefik::enable(),
+                                Param::DOCKER_SERVICE_MOUNT->value => ['type=bind,source=/home/jowy/.mager/proxy.pac,destination=/usr/share/nginx/html/proxy.pac'],
+                            ],
+                            $showOutput,
                         );
                     }
                 })->await();

@@ -6,6 +6,7 @@ use App\Component\Server\Docker\DockerServiceId;
 use App\Component\Server\FailedCommandException;
 use App\Component\Server\Helper;
 use App\Component\Server\TaskInterface;
+
 final class DockerServiceCreate implements TaskInterface
 {
     public static function exec(array $args = []): array
@@ -35,13 +36,13 @@ final class DockerServiceCreate implements TaskInterface
         $cmd[] = "--name {$namespace}-{$name}";
         $cmd[] = "--replicas {$replicas}";
 
-        if ($mode !== null) {
+        if (null !== $mode) {
             $cmd[] = "--mode {$mode}";
         }
 
         $cmd[] = $image;
 
-        if ($command !== null) {
+        if (null !== $command) {
             $cmd[] = $command;
         }
 
@@ -50,7 +51,7 @@ final class DockerServiceCreate implements TaskInterface
 
     public function result(int $statusCode, string $out, string $err): ?object
     {
-        if ($statusCode !== 0) {
+        if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 

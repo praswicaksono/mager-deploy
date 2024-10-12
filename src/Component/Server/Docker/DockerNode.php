@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server\Docker;
@@ -13,11 +14,8 @@ final class DockerNode
         public readonly bool $self,
         public readonly string $status,
         public readonly string $TlsStatus,
-        public readonly ?string $managerStatus = null
-    )
-    {
-
-    }
+        public readonly ?string $managerStatus = null,
+    ) {}
 
     public static function fromJsonString(string $json): DockerNode
     {
@@ -31,7 +29,7 @@ final class DockerNode
             self: $array['Self'],
             status: $array['Status'],
             TlsStatus: $array['TLSStatus'],
-            managerStatus: $array['ManagerStatus']  ?? null
+            managerStatus: $array['ManagerStatus']  ?? null,
         );
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server\Task;
@@ -15,13 +16,13 @@ final class DockerVolumeCreate implements TaskInterface
         $name = Helper::getArg(Param::DOCKER_VOLUME_NAME->value, $args);
 
         return [
-            "docker volume create {$namespace}-{$name}"
+            "docker volume create {$namespace}-{$name}",
         ];
     }
 
     public function result(int $statusCode, string $out, string $err): ?object
     {
-        if ($statusCode !== 0) {
+        if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 

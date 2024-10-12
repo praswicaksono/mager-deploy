@@ -57,9 +57,9 @@
             "composer dumpautoload --optimize --no-dev",
             "./vendor/bin/box compile -vvv"
         ],
-        "cs": ["./vendor/bin/php-cs-fixer check"],
-        "cs:fix": ["./vendor/bin/php-cs-fixer fix src tests"],
-        "phpstan": ["./vendor/bin/phpstan"],
+        "cs": ["./vendor/bin/php-cs-fixer check --diff"],
+        "cs:fix": ["./vendor/bin/php-cs-fixer fix src"],
+        "phpstan": ["./vendor/bin/phpstan -vvv"],
         "phpstan:fix": ["./vendor/bin/phpstan fix"],
         "ci": ["@cs", "@phpstan"]
     },

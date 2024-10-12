@@ -14,10 +14,8 @@ final readonly class DockerVolume
         public string $mountpoint,
         public string $links,
         public string $size,
-        public string $status
-    ) {
-
-    }
+        public string $status,
+    ) {}
 
     public static function fromJsonString(string $json): self
     {
@@ -33,7 +31,7 @@ final readonly class DockerVolume
             mountpoint: $array['Mountpoint'],
             links: $array['Links'],
             size: $array['Size'],
-            status: $array['Status']
+            status: $array['Status'],
         );
     }
 }

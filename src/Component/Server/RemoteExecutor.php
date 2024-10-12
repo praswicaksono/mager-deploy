@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server;
@@ -8,12 +9,8 @@ use Symfony\Component\Process\Process;
 
 final class RemoteExecutor implements ExecutorInterface
 {
-    public function __construct(private readonly Ssh $conn, public readonly bool $debug = false)
-    {}
+    public function __construct(private readonly Ssh $conn, public readonly bool $debug = false) {}
 
-    /**
-     * @inheritDoc
-     */
     public function run(string $task, array $args = [], ?callable $onProgress = null): Result
     {
         $command = implode(PHP_EOL, $task::exec($args));
@@ -27,8 +24,8 @@ final class RemoteExecutor implements ExecutorInterface
 
         $process->wait(function (string $type, string $buffer) use ($out, $err, $onProgress, $process) {
             match (true) {
-                $type == Process::OUT => fwrite($out, $buffer),
-                $type == Process::ERR => fwrite($err, $buffer),
+                Process::OUT == $type => fwrite($out, $buffer),
+                Process::ERR == $type => fwrite($err, $buffer),
             };
 
             if (is_callable($onProgress)) {
@@ -46,6 +43,6 @@ final class RemoteExecutor implements ExecutorInterface
         fclose($out);
         fclose($err);
 
-        return new Result((new $task)->result($process->getExitCode(), $outBuffer, $errBuffer));
+        return new Result((new $task())->result($process->getExitCode(), $outBuffer, $errBuffer));
     }
 }

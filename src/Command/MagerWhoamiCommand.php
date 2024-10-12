@@ -8,7 +8,6 @@ use App\Component\Server\Task\Param;
 use App\Helper\Server;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -20,7 +19,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class MagerWhoamiCommand extends Command
 {
-
     public function __construct()
     {
         parent::__construct();
@@ -32,7 +30,7 @@ class MagerWhoamiCommand extends Command
             'namespace',
             null,
             InputOption::VALUE_OPTIONAL,
-            'Create namespace for the project'
+            'Create namespace for the project',
         );
     }
 
@@ -45,12 +43,13 @@ class MagerWhoamiCommand extends Command
         $executor = new LocalExecutor();
         $helper = Server::withExecutor($executor);
 
-        $onProgress = function(string $type, string $buffer) use ($io) {
+        $onProgress = function (string $type, string $buffer) use ($io) {
             $io->write($buffer);
         };
 
         if (! $helper->isDockerSwarmEnabled()) {
-            $io->error("Docker swarm was not enabled");
+            $io->error('Docker swarm was not enabled');
+
             return Command::FAILURE;
         }
 
@@ -61,8 +60,8 @@ class MagerWhoamiCommand extends Command
             Param::DOCKER_SERVICE_NETWORK->value => ["{$namespace}-mager"],
             Param::DOCKER_SERVICE_LABEL->value => [
                 "'traefik.http.routers.local-whoami.rule=Host(`whoami.wip`)'",
-                'traefik.http.services.local-whoami.loadbalancer.server.port=80'
-            ]
+                'traefik.http.services.local-whoami.loadbalancer.server.port=80',
+            ],
         ], $onProgress);
 
 

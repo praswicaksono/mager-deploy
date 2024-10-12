@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server\Task;
@@ -16,13 +17,13 @@ final class DockerStackServices implements TaskInterface
         $stackName = Helper::getArg(Param::DOCKER_STACK_DEPLOY_APP_NAME->value, $args);
 
         return [
-            "docker stack services --format '{{json .}}' {$namespace}-{$stackName}"
+            "docker stack services --format '{{json .}}' {$namespace}-{$stackName}",
         ];
     }
 
     public function result(int $statusCode, string $out, string $err): ?object
     {
-        if ($statusCode !== 0) {
+        if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 

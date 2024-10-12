@@ -1,11 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server\Task;
 
 use App\Component\Server\Docker\DockerNode;
 use App\Component\Server\FailedCommandException;
-use App\Component\Server\Result;
 use App\Component\Server\TaskInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 
@@ -17,21 +17,21 @@ final class DockerNodeList implements TaskInterface
 
         $filters = [];
         foreach ($filterParam as $key => $value) {
-            if ($value === null) {
-                $filters[] ="--filter node.label={{$key}}";
+            if (null === $value) {
+                $filters[] = "--filter node.label={{$key}}";
             } else {
-                $filters[] ="--filter node.label={{$key}}={{$value}}";
+                $filters[] = "--filter node.label={{$key}}={{$value}}";
             }
         }
 
         return [
-            sprintf('docker node ls --format "{{json .}}" %s', implode(' ', $filters))
+            sprintf('docker node ls --format "{{json .}}" %s', implode(' ', $filters)),
         ];
     }
 
     public function result(int $statusCode, string $out, string $err): ?object
     {
-        if ($statusCode !== 0) {
+        if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 

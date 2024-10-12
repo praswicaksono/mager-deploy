@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server\Task;
@@ -19,13 +20,13 @@ final class DebianInstallDocker implements TaskInterface
             'sudo apt update -y',
             'sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y',
             'sudo groupadd docker',
-            'sudo usermod -aG docker $USER'
+            'sudo usermod -aG docker $USER',
         ];
     }
 
     public function result(int $statusCode, string $out, string $err): ?object
     {
-        if ($statusCode !== 0) {
+        if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 
