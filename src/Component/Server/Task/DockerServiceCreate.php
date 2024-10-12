@@ -9,6 +9,7 @@ use App\Component\Server\TaskInterface;
 
 /**
  * @template T
+ *
  * @implements TaskInterface<DockerServiceId>
  */
 final class DockerServiceCreate implements TaskInterface

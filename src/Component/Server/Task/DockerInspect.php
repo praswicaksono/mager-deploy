@@ -6,11 +6,11 @@ namespace App\Component\Server\Task;
 
 use App\Component\Server\FailedCommandException;
 use App\Component\Server\Helper;
-use App\Component\Server\Result;
 use App\Component\Server\TaskInterface;
 
 /**
  * @template T
+ *
  * @implements TaskInterface<string>
  */
 final class DockerInspect implements TaskInterface

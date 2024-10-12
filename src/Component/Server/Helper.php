@@ -11,9 +11,9 @@ use Webmozart\Assert\Assert;
 final class Helper
 {
     /**
-     * @param string $options
      * @param array<string|int, mixed> $args
-     * @param string[] $cmd
+     * @param string[]                 $cmd
+     *
      * @return string[]
      */
     public static function buildOptions(string $options, array $args, array $cmd): array
@@ -31,9 +31,8 @@ final class Helper
     }
 
     /**
-     * @param string $name
      * @param array<string|int, mixed> $args
-     * @param bool $required
+     *
      * @return string|bool|int|array<int|string, string|int|null>|null
      */
     public static function getArg(string $name, array $args, bool $required = true): string|bool|int|array|null
@@ -49,8 +48,9 @@ final class Helper
 
     /**
      * @template T
-     * @param string $json
+     *
      * @param callable(string): T $callback
+     *
      * @return Collection<int, T>
      */
     public static function deserializeJsonList(string $json, callable $callback): Collection

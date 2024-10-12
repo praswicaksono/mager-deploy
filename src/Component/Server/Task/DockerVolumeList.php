@@ -8,11 +8,11 @@ use App\Component\Server\Docker\DockerVolume;
 use App\Component\Server\FailedCommandException;
 use App\Component\Server\Helper;
 use App\Component\Server\TaskInterface;
-use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
 /**
  * @template T
+ *
  * @implements TaskInterface<Collection<int, DockerVolume>>
  * /
  */
@@ -31,8 +31,8 @@ final class DockerVolumeList implements TaskInterface
     }
 
     /**
-     * @inheritDoc
      * @return Collection<int, DockerVolume>
+     *
      * @throws FailedCommandException
      */
     public function result(int $statusCode, string $out, string $err): Collection
@@ -41,7 +41,7 @@ final class DockerVolumeList implements TaskInterface
             FailedCommandException::throw($err, $statusCode);
         }
 
-        return Helper::deserializeJsonList($out, function(string $item): DockerVolume {
+        return Helper::deserializeJsonList($out, function (string $item): DockerVolume {
             return DockerVolume::fromJsonString($item);
         });
     }

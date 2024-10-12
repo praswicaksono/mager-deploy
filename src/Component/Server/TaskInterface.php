@@ -11,6 +11,7 @@ interface TaskInterface
 {
     /**
      * @param array<string, string|string[]|int|int[]|null> $args
+     *
      * @return string[]
      */
     public static function exec(array $args = []): array;

@@ -29,11 +29,12 @@ final class Server
     }
 
     /**
-     * @param class-string $task
-     * @param array<string|int, mixed> $args
+     * @param class-string                        $task
+     * @param array<string|int, mixed>            $args
      * @param callable(string, string): void|null $onProgress
-     * @param bool $continueOnError
+     *
      * @return ?Result<mixed>
+     *
      * @throws FailedCommandException
      */
     public function exec(string $task, array $args = [], ?callable $onProgress = null, bool $continueOnError = false): ?Result
@@ -89,9 +90,6 @@ final class Server
     }
 
     /**
-     * @param SymfonyStyle $io
-     * @param bool $debug
-     * @param ProgressIndicator $progress
      * @return callable(string, string): void
      */
     public function showOutput(SymfonyStyle $io, bool $debug, ProgressIndicator $progress): callable

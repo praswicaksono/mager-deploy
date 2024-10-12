@@ -19,9 +19,6 @@ final class Traefik
     }
 
     /**
-     * @param string|null $name
-     * @param string|null $host
-     * @param int|null $port
      * @return array|string[]
      */
     public static function enable(?string $name = null, ?string $host = null, ?int $port = null): array

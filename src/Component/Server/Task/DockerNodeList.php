@@ -12,6 +12,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 
 /**
  * @template T
+ *
  * @implements TaskInterface<ArrayCollection<DockerNode>>
  */
 final class DockerNodeList implements TaskInterface
@@ -35,8 +36,8 @@ final class DockerNodeList implements TaskInterface
     }
 
     /**
-     * @inheritDoc
      * @return ArrayCollection<int, DockerNode>
+     *
      * @throws FailedCommandException
      */
     public function result(int $statusCode, string $out, string $err): ArrayCollection

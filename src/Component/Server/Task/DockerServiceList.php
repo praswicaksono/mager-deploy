@@ -12,6 +12,7 @@ use Doctrine\Common\Collections\Collection;
 
 /**
  * @template T
+ *
  * @implements TaskInterface<Collection<int, DockerService>>
  */
 final class DockerServiceList implements TaskInterface
@@ -27,8 +28,8 @@ final class DockerServiceList implements TaskInterface
     }
 
     /**
-     * @inheritDoc
      * @return Collection<int, DockerService>
+     *
      * @throws FailedCommandException
      */
     public function result(int $statusCode, string $out, string $err): Collection

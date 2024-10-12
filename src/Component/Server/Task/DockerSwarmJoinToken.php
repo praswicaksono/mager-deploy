@@ -7,10 +7,10 @@ namespace App\Component\Server\Task;
 use App\Component\Server\FailedCommandException;
 use App\Component\Server\TaskInterface;
 use Webmozart\Assert\Assert;
-use App\Component\Server\Docker\DockerSwarmJoinToken as Result;
 
 /**
  * @template T
+ *
  * @implements TaskInterface<string>
  */
 final class DockerSwarmJoinToken implements TaskInterface

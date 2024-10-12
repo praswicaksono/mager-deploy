@@ -10,6 +10,7 @@ use App\Component\Server\TaskInterface;
 
 /**
  * @template T
+ *
  * @implements TaskInterface<null>
  */
 final class DockerStackDeploy implements TaskInterface
