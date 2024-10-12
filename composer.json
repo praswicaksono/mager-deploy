@@ -56,7 +56,12 @@
             "./bin/console cache:warmup --env=prod",
             "composer dumpautoload --optimize --no-dev",
             "./vendor/bin/box compile -vvv"
-        ]
+        ],
+        "cs": ["./vendor/bin/php-cs-fixer check"],
+        "cs:fix": ["./vendor/bin/php-cs-fixer fix src tests"],
+        "phpstan": ["./vendor/bin/phpstan"],
+        "phpstan:fix": ["./vendor/bin/phpstan fix"],
+        "ci": ["@cs", "@phpstan"]
     },
     "conflict": {
         "symfony/symfony": "*"
@@ -69,6 +74,8 @@
     },
     "require-dev": {
         "bamarni/composer-bin-plugin": "^1.8",
+        "friendsofphp/php-cs-fixer": "^3.64",
+        "phpstan/phpstan": "^1.12",
         "phpunit/phpunit": "^9.5",
         "symfony/browser-kit": "7.1.*",
         "symfony/css-selector": "7.1.*",
