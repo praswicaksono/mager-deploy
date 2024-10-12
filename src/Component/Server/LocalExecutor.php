@@ -6,9 +6,9 @@ namespace App\Component\Server;
 
 use Symfony\Component\Process\Process;
 
-final class LocalExecutor implements ExecutorInterface
+final readonly class LocalExecutor implements ExecutorInterface
 {
-    public function __construct(private readonly bool $debug = false) {}
+    public function __construct(private bool $debug = false) {}
 
     public function run(string $task, array $args = [], ?callable $onProgress = null): Result
     {

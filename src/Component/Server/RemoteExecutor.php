@@ -7,9 +7,9 @@ namespace App\Component\Server;
 use Spatie\Ssh\Ssh;
 use Symfony\Component\Process\Process;
 
-final class RemoteExecutor implements ExecutorInterface
+final readonly class RemoteExecutor implements ExecutorInterface
 {
-    public function __construct(private readonly Ssh $conn, public readonly bool $debug = false) {}
+    public function __construct(private Ssh $conn, public bool $debug = false) {}
 
     public function run(string $task, array $args = [], ?callable $onProgress = null): Result
     {

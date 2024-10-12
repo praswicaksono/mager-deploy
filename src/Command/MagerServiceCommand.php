@@ -58,6 +58,7 @@ final class MagerServiceCommand extends Command
         $result = async(function () use ($server) {
             return $server->exec(DockerServiceList::class);
         })->await();
+        /** @var ArrayCollection<int, DockerService> $collection */
         $collection = $result->data;
 
         $table = $io->createTable();

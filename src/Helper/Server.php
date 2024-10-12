@@ -11,6 +11,7 @@ use App\Component\Server\Result;
 use App\Component\Server\Task\DockerNodeList;
 use App\Component\Server\Task\DockerServiceList;
 use App\Component\Server\Task\Param;
+use App\Component\Server\TaskInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -29,7 +30,7 @@ final class Server
     }
 
     /**
-     * @param class-string                        $task
+     * @param class-string<TaskInterface<mixed>>  $task
      * @param array<string|int, mixed>            $args
      * @param callable(string, string): void|null $onProgress
      *

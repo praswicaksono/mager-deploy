@@ -7,8 +7,9 @@ namespace App\Component\Server;
 interface ExecutorInterface
 {
     /**
-     * @param class-string                             $task
+     * @param class-string<TaskInterface<mixed>>       $task
      * @param array<string, string|string[]|int|int[]> $args
+     * @param callable(string, string): void|null      $onProgress
      *
      * @return Result<mixed>
      */
