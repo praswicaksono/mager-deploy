@@ -7,7 +7,10 @@ namespace App\Component\Server;
 interface ExecutorInterface
 {
     /**
-     * @param class-string<TaskInterface> $task
+     * @param class-string $task
+     * @param array<string, string|string[]|int|int[]> $args
+     * @param ?callable $onProgress
+     * @return Result<mixed>
      */
     public function run(string $task, array $args = [], ?callable $onProgress = null): Result;
 }

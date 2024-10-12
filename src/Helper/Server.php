@@ -28,6 +28,14 @@ final class Server
         return $obj;
     }
 
+    /**
+     * @param class-string $task
+     * @param array<string|int, mixed> $args
+     * @param callable(string, string): void|null $onProgress
+     * @param bool $continueOnError
+     * @return ?Result<mixed>
+     * @throws FailedCommandException
+     */
     public function exec(string $task, array $args = [], ?callable $onProgress = null, bool $continueOnError = false): ?Result
     {
         try {
@@ -54,7 +62,7 @@ final class Server
 
     public function isProxyRunning(string $namespace): bool
     {
-        /** @var Result<ArrayCollection<DockerService>> $res */
+        /** @var Result<ArrayCollection<int, DockerService>> $res */
         $res = $this->executor->run(DockerServiceList::class, [
             Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$namespace}-mager_proxy"],
         ]);
@@ -68,7 +76,7 @@ final class Server
 
     public function isProxyAutoConfigRunning(string $namespace): bool
     {
-        /** @var Result<ArrayCollection<DockerService>> $res */
+        /** @var Result<ArrayCollection<int, DockerService>> $res */
         $res = $this->executor->run(DockerServiceList::class, [
             Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$namespace}-mager_pac"],
         ]);
@@ -80,9 +88,15 @@ final class Server
         return true;
     }
 
+    /**
+     * @param SymfonyStyle $io
+     * @param bool $debug
+     * @param ProgressIndicator $progress
+     * @return callable(string, string): void
+     */
     public function showOutput(SymfonyStyle $io, bool $debug, ProgressIndicator $progress): callable
     {
-        return function (string $type, string $buffer) use ($io, $debug, $progress) {
+        return function (string $type, string $buffer) use ($io, $debug, $progress): void {
             if (Process::ERR === $type) {
                 if ($debug) {
                     $io->warning($buffer);
@@ -96,6 +110,9 @@ final class Server
         };
     }
 
+    /**
+     * @return string[]
+     */
     public function getAppNameAndCwd(): array
     {
         $cwd = getcwd();

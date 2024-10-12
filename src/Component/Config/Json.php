@@ -13,6 +13,9 @@ use function Amp\File\read;
 
 final class Json implements Config
 {
+    /**
+     * @var Dot<int|string, mixed>
+     */
     private Dot $config;
 
     private string $path;

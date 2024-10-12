@@ -60,7 +60,6 @@
         "cs": ["./vendor/bin/php-cs-fixer check --diff"],
         "cs:fix": ["./vendor/bin/php-cs-fixer fix src"],
         "phpstan": ["./vendor/bin/phpstan -vvv"],
-        "phpstan:fix": ["./vendor/bin/phpstan fix"],
         "ci": ["@cs", "@phpstan"]
     },
     "conflict": {

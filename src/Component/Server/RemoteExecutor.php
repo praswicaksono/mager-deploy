@@ -24,8 +24,8 @@ final class RemoteExecutor implements ExecutorInterface
 
         $process->wait(function (string $type, string $buffer) use ($out, $err, $onProgress, $process) {
             match (true) {
-                Process::OUT == $type => fwrite($out, $buffer),
                 Process::ERR == $type => fwrite($err, $buffer),
+                default => fwrite($out, $buffer),
             };
 
             if (is_callable($onProgress)) {

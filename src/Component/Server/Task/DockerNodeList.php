@@ -6,14 +6,19 @@ namespace App\Component\Server\Task;
 
 use App\Component\Server\Docker\DockerNode;
 use App\Component\Server\FailedCommandException;
+use App\Component\Server\Helper;
 use App\Component\Server\TaskInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 
+/**
+ * @template T
+ * @implements TaskInterface<ArrayCollection<DockerNode>>
+ */
 final class DockerNodeList implements TaskInterface
 {
     public static function exec($args = []): array
     {
-        $filterParam = $args[Param::DOCKER_NODE_LIST_FILTER->value] ?? [];
+        $filterParam = Helper::getArg(Param::DOCKER_NODE_LIST_FILTER->value, $args, required: false) ?? [];
 
         $filters = [];
         foreach ($filterParam as $key => $value) {
@@ -29,7 +34,12 @@ final class DockerNodeList implements TaskInterface
         ];
     }
 
-    public function result(int $statusCode, string $out, string $err): ?object
+    /**
+     * @inheritDoc
+     * @return ArrayCollection<int, DockerNode>
+     * @throws FailedCommandException
+     */
+    public function result(int $statusCode, string $out, string $err): ArrayCollection
     {
         if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);

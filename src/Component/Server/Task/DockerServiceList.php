@@ -8,7 +8,12 @@ use App\Component\Server\Docker\DockerService;
 use App\Component\Server\FailedCommandException;
 use App\Component\Server\Helper;
 use App\Component\Server\TaskInterface;
+use Doctrine\Common\Collections\Collection;
 
+/**
+ * @template T
+ * @implements TaskInterface<Collection<int, DockerService>>
+ */
 final class DockerServiceList implements TaskInterface
 {
     public static function exec(array $args = []): array
@@ -21,13 +26,18 @@ final class DockerServiceList implements TaskInterface
         return [implode(' ', $cmd)];
     }
 
-    public function result(int $statusCode, string $out, string $err): ?object
+    /**
+     * @inheritDoc
+     * @return Collection<int, DockerService>
+     * @throws FailedCommandException
+     */
+    public function result(int $statusCode, string $out, string $err): Collection
     {
         if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 
-        return Helper::deserializeJsonList($out, function (string $item) {
+        return Helper::deserializeJsonList($out, function (string $item): DockerService {
             return DockerService::fromJsonString($item);
         });
     }

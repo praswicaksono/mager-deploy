@@ -8,6 +8,7 @@ use App\Component\Server\FailedCommandException;
 use App\Component\Server\TaskInterface;
 
 /**
+ * @template T
  * @implements TaskInterface<null>
  */
 final class DockerSwarmJoin implements TaskInterface
@@ -22,7 +23,7 @@ final class DockerSwarmJoin implements TaskInterface
         ];
     }
 
-    public function result(int $statusCode, string $out, string $err): ?object
+    public function result(int $statusCode, string $out, string $err): null
     {
         if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);

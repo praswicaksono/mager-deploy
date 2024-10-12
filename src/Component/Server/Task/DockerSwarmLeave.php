@@ -7,6 +7,10 @@ namespace App\Component\Server\Task;
 use App\Component\Server\FailedCommandException;
 use App\Component\Server\TaskInterface;
 
+/**
+ * @template T
+ * @implements TaskInterface<null>
+ */
 final class DockerSwarmLeave implements TaskInterface
 {
     public static function exec(array $args = []): array
@@ -16,7 +20,7 @@ final class DockerSwarmLeave implements TaskInterface
         ];
     }
 
-    public function result(int $statusCode, string $out, string $err): ?object
+    public function result(int $statusCode, string $out, string $err): null
     {
         if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);

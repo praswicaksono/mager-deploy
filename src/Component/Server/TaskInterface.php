@@ -9,10 +9,14 @@ namespace App\Component\Server;
  */
 interface TaskInterface
 {
+    /**
+     * @param array<string, string|string[]|int|int[]|null> $args
+     * @return string[]
+     */
     public static function exec(array $args = []): array;
 
     /**
-     * @return ?T
+     * @return T
      */
-    public function result(int $statusCode, string $out, string $err): ?object;
+    public function result(int $statusCode, string $out, string $err): mixed;
 }

@@ -51,11 +51,12 @@ final class MagerDeployCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         $domain = $input->getOption('domain') ?? null;
-        $port = (int) $input->getOption('port') ?? null;
+        $port = $input->getOption('port') ?? null;
 
         Assert::notEmpty($domain, '--domain must not be empty');
         Assert::notEmpty($port, '--port must not be empty');
 
+        $port = intval($port);
         $namespace = 'local';
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor);

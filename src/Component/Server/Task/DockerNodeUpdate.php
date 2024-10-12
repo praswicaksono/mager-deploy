@@ -9,15 +9,23 @@ use App\Component\Server\Helper;
 use App\Component\Server\TaskInterface;
 use Webmozart\Assert\Assert;
 
+/**
+ * @template T
+ * @implements TaskInterface<null>
+ */
 final class DockerNodeUpdate implements TaskInterface
 {
     public static function exec(array $args = []): array
     {
-        $addLabel = $args[Param::DOCKER_NODE_UPDATE_LABEL_ADD->value] ?? [];
-        $removeLabel = $args[Param::DOCKER_NODE_UPDATE_LABEL_REMOVE->value] ?? [];
-        $role = $args[Param::DOCKER_NODE_UPDATE_ROLE->value] ?? null;
-        $availability = $args[Param::DOCKER_NODE_UPDATE_AVAILABILITY->value] ?? null;
-        $nodeId = $args[Param::DOCKER_NODE_ID->value] ?? null;
+        $nodeId = (string) Helper::getArg(Param::DOCKER_NODE_ID->value, $args);
+        /** @var array|string[] $addLabel */
+        $addLabel = Helper::getArg(Param::DOCKER_NODE_UPDATE_LABEL_ADD->value, $args, required: false) ?? [];
+        /** @var array|string[] $removeLabel */
+        $removeLabel = Helper::getArg(Param::DOCKER_NODE_UPDATE_LABEL_REMOVE->value, $args, required: false) ?? [];
+        /** @var ?string $role */
+        $role = Helper::getArg(Param::DOCKER_NODE_UPDATE_ROLE->value, $args, required: false) ?? null;
+        /** @var ?string $availability */
+        $availability = Helper::getArg(Param::DOCKER_NODE_UPDATE_AVAILABILITY->value, $args, required: false) ?? null;
 
         $cmd = ['docker', 'node', 'update'];
 
@@ -40,7 +48,7 @@ final class DockerNodeUpdate implements TaskInterface
 
     }
 
-    public function result(int $statusCode, string $out, string $err): ?object
+    public function result(int $statusCode, string $out, string $err): null
     {
         if (0 != $statusCode) {
             FailedCommandException::throw($err, $statusCode);

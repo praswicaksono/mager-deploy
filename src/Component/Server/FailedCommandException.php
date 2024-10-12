@@ -9,7 +9,7 @@ final class FailedCommandException extends \Exception
     /**
      * @throws static
      */
-    public static function throw(string $message, int $code = 0)
+    public static function throw(string $message, int $code = 0): void
     {
         throw new self($message, $code);
     }

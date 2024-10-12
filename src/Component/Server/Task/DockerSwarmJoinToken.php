@@ -9,6 +9,10 @@ use App\Component\Server\TaskInterface;
 use Webmozart\Assert\Assert;
 use App\Component\Server\Docker\DockerSwarmJoinToken as Result;
 
+/**
+ * @template T
+ * @implements TaskInterface<string>
+ */
 final class DockerSwarmJoinToken implements TaskInterface
 {
     public static function exec(array $args = []): array
@@ -23,12 +27,12 @@ final class DockerSwarmJoinToken implements TaskInterface
         ];
     }
 
-    public function result(int $statusCode, string $out, string $err): ?object
+    public function result(int $statusCode, string $out, string $err): string
     {
         if (0 !== $statusCode) {
             FailedCommandException::throw($err, $statusCode);
         }
 
-        return new Result($out);
+        return $out;
     }
 }

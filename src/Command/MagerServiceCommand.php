@@ -54,16 +54,16 @@ final class MagerServiceCommand extends Command
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor);
 
-        /** @var Result<ArrayCollection<DockerService>> $result */
+        /** @var Result<ArrayCollection<int, DockerService>> $result */
         $result = async(function () use ($server) {
             return $server->exec(DockerServiceList::class);
         })->await();
-        $result = $result->data;
+        $collection = $result->data;
 
         $table = $io->createTable();
         $table->setHeaders(['ID', 'Namespace', 'App', 'Image', 'Ports']);
 
-        foreach ($result as $service) {
+        foreach ($collection as $service) {
             if (str_ends_with($service->name, 'mager_proxy') || str_ends_with($service->name, 'mager_pac')) {
                 continue;
             }

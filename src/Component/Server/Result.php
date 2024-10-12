@@ -10,7 +10,7 @@ namespace App\Component\Server;
 final class Result
 {
     /**
-     * @param ?T $data
+     * @param T $data
      */
-    public function __construct(public readonly ?object $data = null) {}
+    public function __construct(public readonly mixed $data = null) {}
 }
