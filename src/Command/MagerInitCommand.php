@@ -32,6 +32,7 @@ use function Amp\async;
 final class MagerInitCommand extends Command
 {
     private const TRAEFIK_DASHBOARD_NAME = 'magerdashboard';
+    private const TRAEFIK_PAC_NAME = 'pac';
 
     public function __construct(
         private readonly Config $config,
@@ -177,6 +178,14 @@ final class MagerInitCommand extends Command
                 );
             })->await();
 
+            if ($isLocal) {
+                async(function () use ($server) {
+                    $server->exec(
+                        AddProxyAutoConfiguration::class,
+                    );
+                })->await();
+            }
+
             async(function () use ($server, $namespace, $showOutput, $isLocal) {
                 if (! $server->isProxyRunning($namespace)) {
                     $sslSetup = [
@@ -197,11 +206,36 @@ final class MagerInitCommand extends Command
                         "--providers.swarm.network={$namespace}-main",
                         '--providers.docker.exposedByDefault=false',
                         '--entrypoints.web.address=:80',
+                        '--experimental.plugins.traefik-plugin-waeb.modulename=github.com/tomMoulard/traefik-plugin-waeb',
+                        '--experimental.plugins.traefik-plugin-waeb.version=v1.0.1',
                     ];
 
                     if (! $isLocal) {
                         $command = array_merge($sslSetup, $command);
                     }
+
+                    $pac = [
+                        "'traefik.http.routers.pac.rule=PathRegexp(`\.(pac)$`)'",
+                        Traefik::port(self::TRAEFIK_PAC_NAME, 80),
+                        Traefik::service(self::TRAEFIK_PAC_NAME, 'api@internal'),
+                        Traefik::middleware(self::TRAEFIK_PAC_NAME, 'static-file'),
+                        'traefik.http.middlewares.static-file.plugin.traefik-plugin-waeb.root=/var/www/html/',
+                    ];
+
+                    $label = [
+                        'traefik.enable=true',
+                        Traefik::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->get("server.{$namespace}.proxy_dashboard")),
+                        Traefik::port(self::TRAEFIK_DASHBOARD_NAME, 80),
+                        Traefik::middleware(self::TRAEFIK_DASHBOARD_NAME, 'dashboardauth'),
+                        Traefik::service(self::TRAEFIK_DASHBOARD_NAME, 'api@internal'),
+                        "traefik.http.middlewares.dashboardauth.basicauth.users={$this->config->get("server.{$namespace}.proxy_user")}:{$this->config->get("server.{$namespace}.proxy_password")}",
+                    ];
+
+                    if ($isLocal) {
+                        $label = array_merge($label, $pac);
+                    }
+
+                    $home = getenv('HOME');
 
                     $server->exec(
                         DockerServiceCreate::class,
@@ -212,17 +246,11 @@ final class MagerInitCommand extends Command
                             Param::DOCKER_SERVICE_NETWORK->value => ["{$namespace}-main", 'host'],
                             Param::DOCKER_SERVICE_CONSTRAINTS->value => ['node.role==manager'],
                             Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['80:80', '443:443', '8080:8080'],
-                            Param::DOCKER_SERVICE_LABEL->value => [
-                                'traefik.enable=true',
-                                Traefik::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->get("server.{$namespace}.proxy_dashboard")),
-                                Traefik::port(self::TRAEFIK_DASHBOARD_NAME, 80),
-                                'traefik.http.routers.mydashboard.service=api@internal',
-                                'traefik.http.routers.mydashboard.middlewares=dashboardauth',
-                                "traefik.http.middlewares.dashboardauth.basicauth.users={$this->config->get("server.{$namespace}.proxy_user")}:{$this->config->get("server.{$namespace}.proxy_password")}",
-                            ],
+                            Param::DOCKER_SERVICE_LABEL->value => $label,
                             Param::DOCKER_SERVICE_MOUNT->value => [
                                 'type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock',
                                 "type=volume,source={$namespace}-proxy_letsencrypt,destination=/letsencrypt",
+                                "type=bind,source={$home}/.mager/proxy.pac,destination=/var/www/html/proxy.pac",
                             ],
                             Param::DOCKER_SERVICE_COMMAND->value => implode(' ', $command),
                         ],
@@ -230,33 +258,6 @@ final class MagerInitCommand extends Command
                     );
                 }
             })->await();
-
-            if ($isLocal) {
-                async(function () use ($server) {
-                    $server->exec(
-                        AddProxyAutoConfiguration::class,
-                    );
-                })->await();
-
-                async(function () use ($server, $namespace, $showOutput) {
-                    if (! $server->isProxyAutoConfigRunning($namespace)) {
-                        $server->exec(
-                            DockerServiceCreate::class,
-                            [
-                                Param::GLOBAL_NAMESPACE->value => $namespace,
-                                Param::DOCKER_SERVICE_IMAGE->value => 'nginx',
-                                Param::DOCKER_SERVICE_NAME->value => 'mager_pac',
-                                Param::DOCKER_SERVICE_NETWORK->value => ["{$namespace}-main"],
-                                Param::DOCKER_SERVICE_CONSTRAINTS->value => ['node.role==manager'],
-                                Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['7000:80'],
-                                Param::DOCKER_SERVICE_LABEL->value => Traefik::enable(),
-                                Param::DOCKER_SERVICE_MOUNT->value => ['type=bind,source=/home/jowy/.mager/proxy.pac,destination=/usr/share/nginx/html/proxy.pac'],
-                            ],
-                            $showOutput,
-                        );
-                    }
-                })->await();
-            }
         }
 
         $progress->finish('Initialization completed');

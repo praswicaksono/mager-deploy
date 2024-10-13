@@ -18,6 +18,16 @@ final class Traefik
         return "traefik.http.services.{$name}.loadbalancer.server.port={$port}";
     }
 
+    public static function middleware(string $name, string $middleware): string
+    {
+        return "traefik.http.routers.{$name}.middlewares={$middleware}";
+    }
+
+    public static function service(string $name, string $service): string
+    {
+        return "traefik.http.routers.{$name}.service={$service}";
+    }
+
     /**
      * @return array|string[]
      */
