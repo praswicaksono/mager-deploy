@@ -11,8 +11,6 @@ use App\Component\Server\TaskInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 
 /**
- * @template T
- *
  * @implements TaskInterface<ArrayCollection<DockerNode>>
  */
 final class DockerNodeList implements TaskInterface

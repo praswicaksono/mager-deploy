@@ -10,8 +10,6 @@ use App\Component\Server\TaskInterface;
 use Webmozart\Assert\Assert;
 
 /**
- * @template T
- *
  * @implements TaskInterface<null>
  */
 final class DockerNodeUpdate implements TaskInterface

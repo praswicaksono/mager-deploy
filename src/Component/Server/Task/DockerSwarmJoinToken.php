@@ -9,8 +9,6 @@ use App\Component\Server\TaskInterface;
 use Webmozart\Assert\Assert;
 
 /**
- * @template T
- *
  * @implements TaskInterface<string>
  */
 final class DockerSwarmJoinToken implements TaskInterface

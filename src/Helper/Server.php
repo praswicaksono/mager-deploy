@@ -30,11 +30,13 @@ final class Server
     }
 
     /**
-     * @param class-string<TaskInterface<mixed>>  $task
+     * @template T
+     *
+     * @param class-string<TaskInterface<T>>      $task
      * @param array<string|int, mixed>            $args
      * @param callable(string, string): void|null $onProgress
      *
-     * @return ?Result<mixed>
+     * @return ?Result<T>
      *
      * @throws FailedCommandException
      */

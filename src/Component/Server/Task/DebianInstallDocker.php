@@ -8,8 +8,6 @@ use App\Component\Server\FailedCommandException;
 use App\Component\Server\TaskInterface;
 
 /**
- * @template T
- *
  * @implements TaskInterface<null>
  */
 final class DebianInstallDocker implements TaskInterface

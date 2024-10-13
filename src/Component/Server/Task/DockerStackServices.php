@@ -11,8 +11,6 @@ use App\Component\Server\TaskInterface;
 use Doctrine\Common\Collections\Collection;
 
 /**
- * @template T
- *
  * @implements TaskInterface<Collection<DockerService>>
  */
 final class DockerStackServices implements TaskInterface
