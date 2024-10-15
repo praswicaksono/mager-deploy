@@ -51,6 +51,7 @@
     },
     "scripts": {
         "compile": [
+            "composer bin box require --dev humbug/box",
             "composer install --no-dev",
             "./bin/console cache:clear --env=prod --no-debug",
             "./bin/console cache:warmup --env=prod",
