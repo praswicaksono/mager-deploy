@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Webmozart\Assert\Assert;
 
+use function Amp\async;
 use function Amp\File\exists;
 
 #[AsCommand(
@@ -40,6 +41,20 @@ final class MagerBuildCommand extends Command
         );
 
         $this->addOption(
+            'file',
+            null,
+            InputOption::VALUE_REQUIRED,
+            'Dockerfile to build image',
+        );
+
+        $this->addOption(
+            'name',
+            null,
+            InputOption::VALUE_REQUIRED,
+            'Image name',
+        );
+
+        $this->addOption(
             'version',
             null,
             InputOption::VALUE_REQUIRED,
@@ -53,16 +68,19 @@ final class MagerBuildCommand extends Command
 
         $namespace = $input->getOption('namespace') ?? null;
         $version = $input->getOption('version') ?? 'latest';
-        $config = $this->config->get("server.{$namespace}");
+        $dockerfile = $input->getOption('file') ?? 'Dockerfile';
+        $name = $input->getOption('name') ?? null;
 
         Assert::notEmpty($namespace, '--namespace must be a non-empty string');
-        Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
+        Assert::false($this->config->isNotEmpty(), "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
 
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor);
 
-        [$name, $cwd] = $server->getAppNameAndCwd();
-        $dockerfile = $cwd . DIRECTORY_SEPARATOR . 'Dockerfile';
+        if (null === $name) {
+            [$name, $cwd] = $server->getAppNameAndCwd();
+            $dockerfile = $cwd . DIRECTORY_SEPARATOR . 'Dockerfile';
+        }
 
         if (! exists($dockerfile)) {
             $io->error('Dockerfile does not exist');
@@ -71,16 +89,19 @@ final class MagerBuildCommand extends Command
         }
 
         $progress = new ProgressIndicator($output);
-        $showOutput = $server->showOutput($io, $config['debug'], $progress);
+        $showOutput = $server->showOutput($io, $this->config->isDebug($namespace), $progress);
 
         $progress->start('Building image');
-        $server->exec(
-            DockerImageBuild::class,
-            [
-                Param::DOCKER_IMAGE_TAG->value => "mgr.la/{$namespace}-{$name}:{$version}",
-            ],
-            $showOutput,
-        );
+        async(function () use ($server, $namespace, $name, $version, $showOutput) {
+            $server->exec(
+                DockerImageBuild::class,
+                [
+                    Param::DOCKER_IMAGE_TAG->value => "mgr.la/{$namespace}-{$name}:{$version}",
+                ],
+                $showOutput,
+            );
+        })->await();
+
         $progress->finish('Image has been built');
 
         $io->success('Your image successfully built');

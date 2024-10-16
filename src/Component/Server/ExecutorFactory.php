@@ -5,26 +5,30 @@ declare(strict_types=1);
 namespace App\Component\Server;
 
 use App\Component\Config\Config;
+use App\Component\Config\Data\Server;
 use Spatie\Ssh\Ssh;
 
 final readonly class ExecutorFactory
 {
     public function __construct(private Config $config) {}
 
-    public function __invoke(string $namespace): ExecutorInterface
+    public function __invoke(string $namespace, string $role = 'manager'): ExecutorInterface
     {
-        $config = $this->config->get("server.{$namespace}");
-
-        $debug = $config['debug'];
+        $servers = $this->config->getServers();
+        /** @var Server $target */
+        $target = $servers->filter(function (Server $server) use ($role): bool {
+            return $server->role === $role;
+        })->first();
+        $debug = $this->config->isDebug($namespace);
         $executor = new LocalExecutor($debug);
 
-        if (! $config['is_local']) {
+        if (! $this->config->isLocal()) {
             $ssh = Ssh::create(
-                $config['ssh_user'],
-                $config['manager_ip'],
+                $target->user,
+                $target->ip,
             )->disablePasswordAuthentication()
-                ->usePort($config['port'])
-                ->usePrivateKey($config['ssh_key_path'])
+                ->usePort($target->port)
+                ->usePrivateKey($target->keyPath)
                 ->disableStrictHostKeyChecking()
                 ->disablePasswordAuthentication()
                 ->setTimeout(60 * 30);

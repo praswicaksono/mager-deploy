@@ -44,6 +44,13 @@ final class MagerDeployCommand extends Command
             InputOption::VALUE_REQUIRED,
             'Port that exposed by container',
         );
+
+        $this->addOption(
+            'namespace',
+            null,
+            InputOption::VALUE_REQUIRED,
+            'Target namespace',
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -52,14 +59,19 @@ final class MagerDeployCommand extends Command
 
         $domain = $input->getOption('domain') ?? null;
         $port = $input->getOption('port') ?? null;
+        $namespace = $input->getOption('namespace') ?? 'local';
 
         Assert::notEmpty($domain, '--domain must not be empty');
         Assert::notEmpty($port, '--port must not be empty');
 
         $port = intval($port);
-        $namespace = 'local';
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor);
+
+        $constraint = ['node.role==worker'];
+        if ($this->config->isSingleNode($namespace)) {
+            $constraint = ['node.role==manager'];
+        }
 
         $build = new ArrayInput([
             'command' => 'mager:build',
@@ -70,7 +82,6 @@ final class MagerDeployCommand extends Command
         $cwd = getcwd();
         $cwdArr = explode('/', $cwd);
 
-        $namespace = $this->config->get(Config::NAMESPACE);
         $name = end($cwdArr);
 
         $imageName = "mgr.la/{$namespace}-{$name}";
@@ -84,7 +95,11 @@ final class MagerDeployCommand extends Command
                 Param::DOCKER_SERVICE_IMAGE->value => $imageName,
                 Param::DOCKER_SERVICE_NAME->value => "{$namespace}-{$name}",
                 Param::DOCKER_SERVICE_REPLICAS->value => 1,
-                Param::DOCKER_SERVICE_NETWORK->value => ["{$namespace}-main"],
+                Param::DOCKER_SERVICE_CONSTRAINTS->value => $constraint,
+                Param::DOCKER_SERVICE_NETWORK->value => [
+                    "{$namespace}-main",
+                    Config::MAGER_GLOBAL_NETWORK,
+                ],
                 Param::DOCKER_SERVICE_LABEL->value => Traefik::enable(
                     "{$namespace}-{$name}",
                     $domain,

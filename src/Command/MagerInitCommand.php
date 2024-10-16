@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use App\Component\Config\Config;
+use App\Component\Config\Data\Server as ServerConfig;
 use App\Component\Server\ExecutorFactory;
 use App\Component\Server\Task\AddProxyAutoConfiguration;
 use App\Component\Server\Task\DockerNetworkCreate;
@@ -31,8 +32,12 @@ use function Amp\async;
 )]
 final class MagerInitCommand extends Command
 {
-    private const TRAEFIK_DASHBOARD_NAME = 'magerdashboard';
-    private const TRAEFIK_PAC_NAME = 'pac';
+    private const string TRAEFIK_DASHBOARD_NAME = 'magerdashboard';
+    private const string TRAEFIK_PAC_NAME = 'pac';
+
+    private SymfonyStyle $io;
+
+    private InputInterface $input;
 
     public function __construct(
         private readonly Config $config,
@@ -71,14 +76,15 @@ final class MagerInitCommand extends Command
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    /**
+     * @return array<int, string|bool>
+     */
+    private function initializeConfig(): array
     {
-        $io = new SymfonyStyle($input, $output);
-
-        $isLocal = $input->getOption('local') ?? false;
-        $namespace = $input->getOption('namespace') ?? null;
-        $debug = $input->getOption('debug') ?? false;
-        $noProxy = $input->getOption('no-proxy') ?? false;
+        $isLocal = $this->input->getOption('local') ?? false;
+        $namespace = $this->input->getOption('namespace') ?? null;
+        $debug = $this->input->getOption('debug') ?? false;
+        $noProxy = $this->input->getOption('no-proxy') ?? false;
         $globalNetwork = 'mager-global';
 
         if (!$isLocal) {
@@ -88,39 +94,56 @@ final class MagerInitCommand extends Command
         }
 
         // set default value for local server
-        $managerIp = '127.0.0.1';
         $proxyDashboard = 'dashboard.traefik.wip';
         $proxyUser = 'admin';
         $proxyPassword = 'admin123';
-        $sshUser = null;
-        $sshPort = null;
-        $sshKeyPath = null;
+        $server['ip'] = '127.0.0.1';
+        $server['ssh_user'] = null;
+        $server['ssh_port'] = null;
+        $server['ssh_key_path'] = null;
+        $server['role'] = 'manager';
 
         if (!$isLocal) {
-            $managerIp = $io->askQuestion(new Question('Please enter your manager ip: ', '127.0.0.1'));
-            $sshUser = $io->askQuestion(new Question('Please enter manager ssh user:', 'root'));
-            $sshPort = $io->askQuestion(new Question('Please enter manager ssh port:', '22'));
-            $sshKeyPath = $io->askQuestion(new Question('Please enter manager ssh key path:', '~/.ssh/id_rsa'));
-            $proxyDashboard = $io->askQuestion(new Question('Please enter proxy dashboard url:', 'dashboard.traefik.wip'));
-            $proxyUser = $io->askQuestion(new Question('Please enter proxy user:', 'admin'));
-            $proxyPassword = $io->askQuestion(new Question('Please enter proxy password:', 'admin123'));
+            $server['ip'] = $this->io->askQuestion(new Question('Please enter your server ip: ', '127.0.0.1'));
+            $server['ssh_user'] = $this->io->askQuestion(new Question('Please enter manager ssh user:', 'root'));
+            $server['ssh_port'] = (int) $this->io->askQuestion(new Question('Please enter manager ssh port:', 22));
+            $server['ssh_key_path'] = $this->io->askQuestion(new Question('Please enter manager ssh key path:', '~/.ssh/id_rsa'));
+            $proxyDashboard = $this->io->askQuestion(new Question('Please enter proxy dashboard url:', 'dashboard.traefik.wip'));
+            $proxyUser = $this->io->askQuestion(new Question('Please enter proxy user:', 'admin'));
+            $proxyPassword = $this->io->askQuestion(new Question('Please enter proxy password:', 'admin123'));
         }
+        $servers = [];
+        $servers[] = $server;
 
-        $this->config->set("server.{$namespace}.manager_ip", $managerIp);
-        $this->config->set("server.{$namespace}.ssh_user", $sshUser);
-        $this->config->set("server.{$namespace}.ssh_port", (int) $sshPort);
-        $this->config->set("server.{$namespace}.ssh_key_path", $sshKeyPath);
-        $this->config->set("server.{$namespace}.namespace", $namespace);
-        $this->config->set("server.{$namespace}.debug", $debug);
-        $this->config->set("server.{$namespace}.proxy_dashboard", $proxyDashboard);
-        $this->config->set("server.{$namespace}.proxy_user", $proxyUser);
-        $this->config->set("server.{$namespace}.proxy_password", Encryption::Htpasswd($proxyPassword));
-        $this->config->set("server.{$namespace}.is_local", $isLocal);
-        $this->config->set("server.{$namespace}.network", "{$namespace}-main");
-        $this->config->set("server.{$namespace}.is_single_server", 'true');
+        $this->config->set("{$namespace}.servers", $servers);
+        $this->config->set("{$namespace}.namespace", $namespace);
+        $this->config->set("{$namespace}.debug", $debug);
+        $this->config->set("{$namespace}.proxy_dashboard", $proxyDashboard);
+        $this->config->set("{$namespace}.proxy_user", $proxyUser);
+        $this->config->set("{$namespace}.proxy_password", Encryption::Htpasswd($proxyPassword));
+        $this->config->set("{$namespace}.is_local", $isLocal);
+        $this->config->set("{$namespace}.network", "{$namespace}-main");
+        $this->config->set("{$namespace}.is_single_node", true);
         $this->config->set('global_network', $globalNetwork);
 
         $this->config->save();
+
+        return [
+            $namespace,
+            $isLocal,
+            $noProxy,
+        ];
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $this->input = $input;
+        $this->io = $io = new SymfonyStyle($input, $output);
+
+        [$namespace, $isLocal, $noProxy] = $this->initializeConfig();
+        /** @var ServerConfig $serverConfig */
+        $serverConfig = $this->config->getServers($namespace)->first();
+        $debug = $this->config->isDebug($namespace);
 
         $executor = (new ExecutorFactory($this->config))($namespace);
 
@@ -131,18 +154,18 @@ final class MagerInitCommand extends Command
         $showOutput = $server->showOutput($io, $debug, $progress);
 
         if (!$server->isDockerSwarmEnabled()) {
-            async(function () use ($executor, $managerIp, $showOutput) {
+            async(function () use ($executor, $serverConfig, $showOutput) {
                 $executor->run(
                     DockerSwarmInit::class,
                     [
-                        Param::DOCKER_SWARM_MANAGER_IP->value => $managerIp,
+                        Param::DOCKER_SWARM_MANAGER_IP->value => $serverConfig->ip,
                     ],
                     $showOutput,
                 );
             })->await();
         }
 
-        async(function () use ($server, $namespace, $showOutput, $globalNetwork) {
+        async(function () use ($server, $namespace, $showOutput) {
             $server->exec(
                 DockerNetworkCreate::class,
                 [
@@ -158,7 +181,7 @@ final class MagerInitCommand extends Command
                 DockerNetworkCreate::class,
                 [
                     Param::DOCKER_NETWORK_CREATE_DRIVER->value => 'overlay',
-                    Param::DOCKER_NETWORK_NAME->value => $globalNetwork,
+                    Param::DOCKER_NETWORK_NAME->value => Config::MAGER_GLOBAL_NETWORK,
                 ],
                 $showOutput,
                 continueOnError: true,
@@ -224,11 +247,11 @@ final class MagerInitCommand extends Command
 
                     $label = [
                         'traefik.enable=true',
-                        Traefik::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->get("server.{$namespace}.proxy_dashboard")),
+                        Traefik::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->getProxyDashboard($namespace)),
                         Traefik::port(self::TRAEFIK_DASHBOARD_NAME, 80),
                         Traefik::middleware(self::TRAEFIK_DASHBOARD_NAME, 'dashboardauth'),
                         Traefik::service(self::TRAEFIK_DASHBOARD_NAME, 'api@internal'),
-                        "traefik.http.middlewares.dashboardauth.basicauth.users={$this->config->get("server.{$namespace}.proxy_user")}:{$this->config->get("server.{$namespace}.proxy_password")}",
+                        "traefik.http.middlewares.dashboardauth.basicauth.users={$this->config->getProxyUser($namespace)}:{$this->config->getProxyPassword($namespace)}",
                     ];
 
                     if ($isLocal) {
@@ -249,8 +272,8 @@ final class MagerInitCommand extends Command
                             Param::DOCKER_SERVICE_LABEL->value => $label,
                             Param::DOCKER_SERVICE_MOUNT->value => [
                                 'type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock',
-                                "type=volume,source={$namespace}-proxy_letsencrypt,destination=/letsencrypt",
                                 "type=bind,source={$home}/.mager/proxy.pac,destination=/var/www/html/proxy.pac",
+                                "type=volume,source={$namespace}-proxy_letsencrypt,destination=/letsencrypt",
                             ],
                             Param::DOCKER_SERVICE_COMMAND->value => implode(' ', $command),
                         ],
