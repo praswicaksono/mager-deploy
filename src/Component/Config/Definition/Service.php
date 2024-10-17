@@ -29,4 +29,29 @@ final readonly class Service
         public array $afterDeploy = [],
         public string $protocol = 'http',
     ) {}
+
+    /**
+     * @return array<string, string|int|bool|array<string, string>>
+     */
+    public function toArray(): array
+    {
+        return [
+            $this->name => [
+                'command' => $this->command,
+                'protocol' => $this->protocol,
+                'port' => $this->port,
+                'host' => $this->host,
+                'build' => [
+                    'target' => $this->build?->target,
+                ],
+                'image' => $this->image,
+                'publish' => $this->publish,
+                'env' => $this->env,
+                'mounts' => $this->mounts,
+                'volumes' => $this->volumes,
+                'before-deploy' => $this->beforeDeploy,
+                'after_deploy' => $this->afterDeploy,
+            ],
+        ];
+    }
 }
