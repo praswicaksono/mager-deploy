@@ -12,5 +12,5 @@ interface DefinitionBuilder
     /**
      * @return Collection<int, Service>
      */
-    public function build(string $definitionPath = '.mager.yaml'): Collection;
+    public function build(string $definitionPath = 'mager.yaml'): Collection;
 }

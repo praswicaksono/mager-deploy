@@ -3,11 +3,12 @@
 namespace App\Command;
 
 use App\Component\Config\Config;
+use App\Component\Config\DefinitionBuilder;
 use App\Component\Server\ExecutorFactory;
+use App\Component\Server\Helper\Traefik\Http;
 use App\Component\Server\Task\DockerServiceCreate;
 use App\Component\Server\Task\Param;
 use App\Helper\Server;
-use App\Helper\Traefik;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -19,32 +20,19 @@ use Webmozart\Assert\Assert;
 
 #[AsCommand(
     name: 'mager:deploy',
-    description: 'Add a short description for your command',
+    description: 'Deploy service based on mager.yaml',
 )]
 final class MagerDeployCommand extends Command
 {
     public function __construct(
         private readonly Config $config,
+        private readonly DefinitionBuilder $definitionBuilder,
     ) {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this->addOption(
-            'domain',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'Domain name of app e.g app-name.com',
-        );
-
-        $this->addOption(
-            'port',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'Port that exposed by container',
-        );
-
         $this->addOption(
             'namespace',
             null,
@@ -57,59 +45,102 @@ final class MagerDeployCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $domain = $input->getOption('domain') ?? null;
-        $port = $input->getOption('port') ?? null;
         $namespace = $input->getOption('namespace') ?? 'local';
+        $definitions = $this->definitionBuilder->build();
 
-        Assert::notEmpty($domain, '--domain must not be empty');
-        Assert::notEmpty($port, '--port must not be empty');
-
-        $port = intval($port);
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor);
-
         $constraint = ['node.role==worker'];
         if ($this->config->isSingleNode($namespace)) {
             $constraint = ['node.role==manager'];
         }
 
-        $build = new ArrayInput([
-            'command' => 'mager:build',
-        ]);
+        $version = getenv('APP_VERSION') ?? 'latest';
 
-        $this->getApplication()->doRun($build, $output);
+        foreach ($definitions as $name => $definition) {
+            $imageName = "{$namespace}-{$name}:{$version}";
 
-        $cwd = getcwd();
-        $cwdArr = explode('/', $cwd);
+            // Build target image
+            $build = new ArrayInput([
+                'command' => 'mager:build',
+                '--namespace' => $namespace,
+                '--target' => $definition->build->target,
+                '--name' => $name,
+                '--version' => $version,
+            ]);
 
-        $name = end($cwdArr);
+            $this->getApplication()->doRun($build, $output);
 
-        $imageName = "mgr.la/{$namespace}-{$name}";
+            $io->info("Deploying {$imageName} ...");
 
-        $io->info('Deploying service ...');
+            $network =[
+                "{$namespace}-main",
+                Config::MAGER_GLOBAL_NETWORK,
+            ];
 
-        $server->exec(
-            DockerServiceCreate::class,
-            [
-                Param::GLOBAL_NAMESPACE->value => $namespace,
-                Param::DOCKER_SERVICE_IMAGE->value => $imageName,
-                Param::DOCKER_SERVICE_NAME->value => "{$namespace}-{$name}",
-                Param::DOCKER_SERVICE_REPLICAS->value => 1,
-                Param::DOCKER_SERVICE_CONSTRAINTS->value => $constraint,
-                Param::DOCKER_SERVICE_NETWORK->value => [
-                    "{$namespace}-main",
-                    Config::MAGER_GLOBAL_NETWORK,
+            $labels = [];
+            if ($definition->publish) {
+                $labels = Http::enable(
+                    $imageName,
+                    $definition->build->target,
+                    $definition->port,
+                );
+            }
+
+            $mounts = array_merge(
+                $this->parseMounts($definition->mounts),
+                $this->parseVolumes($namespace, $definition->volumes)
+            );
+
+            $server->exec(
+                DockerServiceCreate::class,
+                [
+                    Param::GLOBAL_NAMESPACE->value => $namespace,
+                    Param::DOCKER_SERVICE_IMAGE->value => $imageName,
+                    Param::DOCKER_SERVICE_NAME->value => $imageName,
+                    Param::DOCKER_SERVICE_REPLICAS->value => 1,
+                    Param::DOCKER_SERVICE_CONSTRAINTS->value => $constraint,
+                    Param::DOCKER_SERVICE_NETWORK->value => $network,
+                    Param::DOCKER_SERVICE_ENV->value => $definition->env,
+                    Param::DOCKER_SERVICE_LABEL->value => $labels,
+                    Param::DOCKER_SERVICE_MOUNT->value => $mounts,
                 ],
-                Param::DOCKER_SERVICE_LABEL->value => Traefik::enable(
-                    "{$namespace}-{$name}",
-                    $domain,
-                    $port,
-                ),
-            ],
-        );
+            );
+        }
 
-        $io->success('You have a new command! Now make it your own! Pass --help to see your options.');
+        $io->success('Your application has been deployed.');
 
         return Command::SUCCESS;
+    }
+
+    private function parseMounts(array $mounts): array
+    {
+        if (empty($mounts)) {
+            return [];
+        }
+
+        $dockerMounts = [];
+        foreach ($mounts as $mount) {
+            [$target, $flag] = explode(',', $mount);
+            [$src, $dest] = explode(':', $target);
+            $dockerMounts[] = "type=bind,source={$src},destination={$dest},{$flag}";
+        }
+
+        return $dockerMounts;
+    }
+
+    private function parseVolumes(string $namespace, array $volumes): array
+    {
+        if (empty($volumes)) {
+            return [];
+        }
+
+        $dockerVolumes = [];
+        foreach ($volumes as $volume) {
+            [$src, $dest] = explode(':', $volume);
+            $dockerVolumes[] = "type=volume,source={$namespace}-{$src},destination={$dest}";
+        }
+
+        return $dockerVolumes;
     }
 }

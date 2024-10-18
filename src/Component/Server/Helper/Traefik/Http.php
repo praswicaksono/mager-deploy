@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Helper;
+namespace App\Component\Server\Helper\Traefik;
 
 use Webmozart\Assert\Assert;
 
-final class Traefik
+final class Http
 {
     public static function host(string $name, string $host): string
     {

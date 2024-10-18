@@ -5,6 +5,7 @@ namespace App\Command;
 use App\Component\Config\Config;
 use App\Component\Config\Data\Server as ServerConfig;
 use App\Component\Server\ExecutorFactory;
+use App\Component\Server\Helper\Traefik\Http;
 use App\Component\Server\Task\AddProxyAutoConfiguration;
 use App\Component\Server\Task\DockerNetworkCreate;
 use App\Component\Server\Task\DockerServiceCreate;
@@ -13,7 +14,6 @@ use App\Component\Server\Task\DockerVolumeCreate;
 use App\Component\Server\Task\Param;
 use App\Helper\Encryption;
 use App\Helper\Server;
-use App\Helper\Traefik;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressIndicator;
@@ -23,7 +23,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Webmozart\Assert\Assert;
-
 use function Amp\async;
 
 #[AsCommand(
@@ -85,7 +84,7 @@ final class MagerInitCommand extends Command
         $namespace = $this->input->getOption('namespace') ?? null;
         $debug = $this->input->getOption('debug') ?? false;
         $noProxy = $this->input->getOption('no-proxy') ?? false;
-        $globalNetwork = 'mager-global';
+        $globalNetwork = Config::MAGER_GLOBAL_NETWORK;
 
         if (!$isLocal) {
             Assert::notEmpty($namespace, '--namespace must be a non-empty string');
@@ -239,18 +238,18 @@ final class MagerInitCommand extends Command
 
                     $pac = [
                         "'traefik.http.routers.pac.rule=PathRegexp(`\.(pac)$`)'",
-                        Traefik::port(self::TRAEFIK_PAC_NAME, 80),
-                        Traefik::service(self::TRAEFIK_PAC_NAME, 'api@internal'),
-                        Traefik::middleware(self::TRAEFIK_PAC_NAME, 'static-file'),
+                        Http::port(self::TRAEFIK_PAC_NAME, 80),
+                        Http::service(self::TRAEFIK_PAC_NAME, 'api@internal'),
+                        Http::middleware(self::TRAEFIK_PAC_NAME, 'static-file'),
                         'traefik.http.middlewares.static-file.plugin.traefik-plugin-waeb.root=/var/www/html/',
                     ];
 
                     $label = [
                         'traefik.enable=true',
-                        Traefik::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->getProxyDashboard($namespace)),
-                        Traefik::port(self::TRAEFIK_DASHBOARD_NAME, 80),
-                        Traefik::middleware(self::TRAEFIK_DASHBOARD_NAME, 'dashboardauth'),
-                        Traefik::service(self::TRAEFIK_DASHBOARD_NAME, 'api@internal'),
+                        Http::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->getProxyDashboard($namespace)),
+                        Http::port(self::TRAEFIK_DASHBOARD_NAME, 80),
+                        Http::middleware(self::TRAEFIK_DASHBOARD_NAME, 'dashboardauth'),
+                        Http::service(self::TRAEFIK_DASHBOARD_NAME, 'api@internal'),
                         "traefik.http.middlewares.dashboardauth.basicauth.users={$this->config->getProxyUser($namespace)}:{$this->config->getProxyPassword($namespace)}",
                     ];
 
