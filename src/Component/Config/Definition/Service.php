@@ -16,9 +16,9 @@ final readonly class Service
      */
     public function __construct(
         public string $name,
-        public array $command,
         public int $port,
         public string $host,
+        public array $command = [],
         public ?Build $build = null,
         public ?string $image = null,
         public bool $publish = true,

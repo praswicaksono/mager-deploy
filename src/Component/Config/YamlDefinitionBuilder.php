@@ -27,9 +27,9 @@ final class YamlDefinitionBuilder implements DefinitionBuilder
             $collection->add(
                 new Service(
                     $name,
-                    $service['command'],
                     $service['port'],
                     $service['host'],
+                    $service['command'],
                     $build,
                     $service['image'] ?? null,
                     $service['publish'] ?? true,
