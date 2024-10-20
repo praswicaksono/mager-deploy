@@ -210,7 +210,7 @@ final class MagerInitCommand extends Command
 
             async(function () use ($server, $namespace, $showOutput, $isLocal) {
                 if (! $server->isProxyRunning($namespace)) {
-                    $sslSetup = [
+                    $httpsSetup = [
                         '--entrypoints.web.http.redirections.entrypoint.to=websecure',
                         '--entryPoints.web.http.redirections.entrypoint.scheme=https',
                         '--entrypoints.websecure.address=:443',
@@ -233,7 +233,7 @@ final class MagerInitCommand extends Command
                     ];
 
                     if (! $isLocal) {
-                        $command = array_merge($sslSetup, $command);
+                        $command = array_merge($httpsSetup, $command);
                     }
 
                     $pac = [
@@ -267,7 +267,7 @@ final class MagerInitCommand extends Command
                             Param::DOCKER_SERVICE_NAME->value => 'mager_proxy',
                             Param::DOCKER_SERVICE_NETWORK->value => ["{$namespace}-main", 'host'],
                             Param::DOCKER_SERVICE_CONSTRAINTS->value => ['node.role==manager'],
-                            Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['80:80', '443:443', '8080:8080'],
+                            Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['80:80', '443:443'],
                             Param::DOCKER_SERVICE_LABEL->value => $label,
                             Param::DOCKER_SERVICE_MOUNT->value => [
                                 'type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock',

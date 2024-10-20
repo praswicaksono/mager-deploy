@@ -1,0 +1,7 @@
+name: sample-app
+services:
+  nginx:
+    proxy:
+      ports:
+        - 80/tcp
+      rule: Host(`nginx.wip`)

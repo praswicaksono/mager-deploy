@@ -45,6 +45,8 @@ enum Param: string
     case DOCKER_IMAGE_TAG = 'docker.image.tag';
     case DOCKER_IMAGE_TARGET = 'docker.image.target';
     case DOCKER_IMAGE_OUTPUT = 'docker.image.output';
+
+    case DOCKER_IMAGE_FILE = 'docker.image.file';
     case DOCKER_VOLUME_NAME = 'docker.volume.name';
     case DOCKER_VOLUME_LIST_FILTER = 'docker.volume.list.filter';
 }

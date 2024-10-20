@@ -14,6 +14,7 @@ final class DockerServiceCreate implements TaskInterface
 {
     public static function exec(array $args = []): array
     {
+        // TODO: add update concurrency options and pause on update failure + auto rollback
         $namespace = (string) Helper::getArg(Param::GLOBAL_NAMESPACE->value, $args);
         $image = (string) Helper::getArg(Param::DOCKER_SERVICE_IMAGE->value, $args);
         $name = (string) Helper::getArg(Param::DOCKER_SERVICE_NAME->value, $args);
@@ -47,6 +48,8 @@ final class DockerServiceCreate implements TaskInterface
 
         $cmd[] = "--name {$namespace}-{$name}";
         $cmd[] = "--replicas {$replicas}";
+        $cmd[] = '--update-order start-first';
+        $cmd[] = '--update-failure-action rollback';
 
         if (null !== $mode) {
             $cmd[] = "--mode {$mode}";

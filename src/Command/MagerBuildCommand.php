@@ -50,12 +50,19 @@ final class MagerBuildCommand extends Command
         $this->addOption(
             'target',
             null,
-            InputOption::VALUE_REQUIRED,
+            InputOption::VALUE_OPTIONAL,
             'Dockerfile build target',
         );
 
         $this->addOption(
-            'version',
+            'file',
+            null,
+            InputOption::VALUE_REQUIRED,
+            'Dockerfile path',
+        );
+
+        $this->addOption(
+            'build',
             null,
             InputOption::VALUE_REQUIRED,
             'Version of current build',
@@ -67,13 +74,13 @@ final class MagerBuildCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         $namespace = $input->getOption('namespace') ?? 'local';
-        $version = $input->getOption('version') ?? 'latest';
+        $version = $input->getOption('build') ?? 'latest';
         $name = $input->getOption('name') ?? null;
         $target = $input->getOption('target') ?? null;
-        $dockerfile = 'Dockerfile';
+        $dockerfile = $input->getOption('file') ?? 'Dockerfile';
 
         Assert::notEmpty($name, '--name must be a non-empty string');
-        Assert::false($this->config->isNotEmpty(), "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
+        Assert::true($this->config->isNotEmpty(), "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
 
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor);

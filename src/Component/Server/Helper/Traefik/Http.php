@@ -8,6 +8,11 @@ use Webmozart\Assert\Assert;
 
 final class Http
 {
+    public static function rule(string $name, string $rule): string
+    {
+        return "'traefik.http.routers.{$name}.rule={$rule}'";
+    }
+
     public static function host(string $name, string $host): string
     {
         return "'traefik.http.routers.{$name}.rule=Host(`$host`)'";

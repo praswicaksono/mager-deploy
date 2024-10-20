@@ -13,7 +13,7 @@ services:
 
     App\Component\Config\YamlDefinitionBuilder: ~
 
-    App\Component\Config\DefinitionBuilder: '@App\Component\Config\YamlDefinitionBuilder'
+    App\Component\Config\DefinitionBuilder: '@App\Component\Config\YamlServiceDefinitionBuilder'
 
     App\Component\Config\Config:
         factory: ['App\Component\Config\ConfigFactory', 'create']

@@ -18,6 +18,7 @@ final class DockerImageBuild implements TaskInterface
         $tag = Helper::getArg(Param::DOCKER_IMAGE_TAG->value, $args);
         $target = Helper::getArg(Param::DOCKER_IMAGE_TARGET->value, $args, required: false) ?? null;
         $output = Helper::getArg(Param::DOCKER_IMAGE_OUTPUT->value, $args, required: false) ?? null;
+        $file = Helper::getArg(Param::DOCKER_IMAGE_FILE->value, $args, required: false) ?? null;
 
 
         $cmd = ['docker', 'buildx', 'build'];
@@ -29,6 +30,10 @@ final class DockerImageBuild implements TaskInterface
 
         if (null !== $output) {
             $cmd[] = "--output {$output}";
+        }
+
+        if (null !== $file) {
+            $cmd[] = "--file {$file}";
         }
 
         $cmd[] = '.';

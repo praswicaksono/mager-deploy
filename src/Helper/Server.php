@@ -21,6 +21,8 @@ final class Server
 {
     private ExecutorInterface $executor;
 
+    private \Closure $outputProgress;
+
     public static function withExecutor(ExecutorInterface $executor): Server
     {
         $obj = new Server();
@@ -43,6 +45,9 @@ final class Server
     public function exec(string $task, array $args = [], ?callable $onProgress = null, bool $continueOnError = false): ?Result
     {
         try {
+            if ($onProgress === null) {
+                $onProgress = $this->outputProgress;
+            }
             return $this->executor->run($task, $args, $onProgress);
         } catch (FailedCommandException $e) {
             if ($continueOnError) {
@@ -66,23 +71,14 @@ final class Server
 
     public function isProxyRunning(string $namespace): bool
     {
-        /** @var Result<ArrayCollection<int, DockerService>> $res */
-        $res = $this->executor->run(DockerServiceList::class, [
-            Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$namespace}-mager_proxy"],
-        ]);
-
-        if ($res->data->isEmpty()) {
-            return false;
-        }
-
-        return true;
+        return $this->isServiceRunning("{$namespace}-mager_proxy");
     }
 
-    public function isProxyAutoConfigRunning(string $namespace): bool
+    public function isServiceRunning(string $containerName): bool
     {
         /** @var Result<ArrayCollection<int, DockerService>> $res */
         $res = $this->executor->run(DockerServiceList::class, [
-            Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$namespace}-mager_pac"],
+            Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$containerName}"],
         ]);
 
         if ($res->data->isEmpty()) {
@@ -109,6 +105,11 @@ final class Server
                 }
             }
         };
+    }
+
+    public function setOutputProgress(callable $outputProgress): void
+    {
+        $this->outputProgress = $outputProgress;
     }
 
     /**
