@@ -48,6 +48,7 @@ jobs:
           key: php-micro-bin
 
       - name: Download Micro
+        if: ${{ steps.cache-download.outputs.cache-hit != 'true' }}
         run: |
           mkdir downloads
           wget https://dl.static-php.dev/static-php-cli/bulk/php-$PHP_VERSION-micro-linux-x86_64.tar.gz -O downloads/php-$PHP_VERSION-linux-x86_64.tar.gz
@@ -65,14 +66,23 @@ jobs:
         run: |
           mkdir release
           tar -xvzf downloads/php-$PHP_VERSION-linux-x86_64.tar.gz --directory downloads
-          ls -la .
-          ls -la downloads
           cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-linux-x86_64.tar.gz release/mager
+          
+          tar -xvzf downloads/php-$PHP_VERSION-linux-aarch64.tar.gz --directory downloads
+          cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-linux-aarch64.tar.gz release/mager
 
-      - name: "Upload Artifact"
+      - name: "Upload Mager Linux X86_64 Artifact"
         uses: actions/upload-artifact@v4
         with:
-          name: Mager Unix
+          name: Mager Linux X86_64
           path: |
             release/mager-linux-x86_64.tar.gz
+          if-no-files-found: error
+
+      - name: "Upload Mager Linux AARCH64 Artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mager Linux AARCH64
+          path: |
+            release/mager-linux-aarch64.tar.gz
           if-no-files-found: error
