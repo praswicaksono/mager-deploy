@@ -1,0 +1,89 @@
+name: Build Mager Binary
+
+on:
+  workflow_dispatch:
+
+env:
+  PHP_VERSION: "8.3.12"
+
+jobs:
+  build-release-artifacts:
+    name: "Build ${{ matrix.php-version }} on ${{ matrix.runner }}"
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version:
+          - "8.3.12"
+        runner:
+          - "ubuntu-latest"
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Setup PHP"
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          tools: pecl, composer
+          extensions: curl, openssl, mbstring, iconv, ctype
+          ini-values: memory_limit=-1
+
+      - name: "Cache composer packages"
+        id: composer-cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php
+
+      # Cache PHP Binary
+      - id: cache-download
+        uses: actions/cache@v4
+        with:
+          path: downloads
+          key: php-micro-bin
+
+      - name: Download Micro
+        run: |
+          mkdir downloads
+          wget https://dl.static-php.dev/static-php-cli/bulk/php-$PHP_VERSION-micro-linux-x86_64.tar.gz -O downloads/php-$PHP_VERSION-linux-x86_64
+          wget https://dl.static-php.dev/static-php-cli/bulk/php-$PHP_VERSION-micro-linux-aarch64.tar.gz -O downloads/php-$PHP_VERSION-linux-aarch64
+          wget https://dl.static-php.dev/static-php-cli/bulk/php-$PHP_VERSION-micro-macos-x86_64.tar.gz -O downloads/php-$PHP_VERSION-macos-X86_64
+          wget https://dl.static-php.dev/static-php-cli/bulk/php-$PHP_VERSION-micro-macos-aarch.tar.gz -O downloads/php-$PHP_VERSION-macos-aarch64
+
+      - name: "Install Dependencies"
+        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --no-dev
+
+      - name: "Build Phar"
+        run: composer compile
+
+      - name: "Bundle release"
+        run: |
+          mkdir release
+          tar -xvzf downloads/php-$PHP_VERSION-linux-x86_64
+          cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-linux-x86_64.tar.gz release/mager
+          
+          tar -xvzf downloads/php-$PHP_VERSION-linux-aarch64
+          cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-linux-aarch64.tar.gz release/mager
+          
+          tar -xvzf downloads/php-$PHP_VERSION-macos-x86_64
+          cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-macos-x86_64.tar.gz release/mager
+          
+          tar -xvzf downloads/php-$PHP_VERSION-macos-aarch64
+          cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-macos-aarch64.tar.gz release/mager
+      
+
+      - name: "Upload Artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mager Unix
+          path: |
+            release/mager-linux-x86_64.tar.gz
+            release/mager-linux-aarch64.tar.gz
+            release/mager-macos-x86_64.tar.gz
+            release/mager-macos-aarch64.tar.gz
+          if-no-files-found: error
