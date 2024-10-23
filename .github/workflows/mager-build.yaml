@@ -45,7 +45,7 @@ jobs:
       - name: Download Micro With ${{ matrix.php-version }}-${{ matrix.arch }}
         run: |
           mkdir downloads
-          wget https://dl.static-php.dev/static-php-cli/bulk/php-${{ matrix.php-version }}-${{ matrix-arch }}.tar.gz -O downloads/php-${{ matrix.php-version }}-${{ matrix-arch }}.tar.gz
+          wget https://dl.static-php.dev/static-php-cli/bulk/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz -O downloads/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz
           tar -xvzf downloads/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz --directory downloads
 
       - name: "Install Dependencies"
