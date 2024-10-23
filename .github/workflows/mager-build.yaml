@@ -69,13 +69,6 @@ jobs:
           
           tar -xvzf downloads/php-$PHP_VERSION-linux-aarch64.tar.gz
           cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-linux-aarch64.tar.gz release/mager
-          
-          tar -xvzf downloads/php-$PHP_VERSION-macos-x86_64.tar.gz
-          cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-macos-x86_64.tar.gz release/mager
-          
-          tar -xvzf downloads/php-$PHP_VERSION-macos-aarch64.tar.gz
-          cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-macos-aarch64.tar.gz release/mager
-      
 
       - name: "Upload Artifact"
         uses: actions/upload-artifact@v4
@@ -84,6 +77,4 @@ jobs:
           path: |
             release/mager-linux-x86_64.tar.gz
             release/mager-linux-aarch64.tar.gz
-            release/mager-macos-x86_64.tar.gz
-            release/mager-macos-aarch64.tar.gz
           if-no-files-found: error
