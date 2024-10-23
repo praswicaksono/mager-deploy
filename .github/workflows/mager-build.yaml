@@ -1,11 +1,11 @@
-name: Build Mager Binary
+name: Release Mager Binary
 
 on:
   workflow_dispatch:
 
 jobs:
   build-release-artifacts:
-    name: "Build ${{ matrix.php-version }} with ${{ matrix.release }} on ${{ matrix.runner }}"
+    name: "Build ${{ matrix.php-version }} with ${{ matrix.arch }} on ${{ matrix.runner }}"
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -45,7 +45,7 @@ jobs:
       - name: Download Micro With ${{ matrix.php-version }}-${{ matrix.arch }}
         run: |
           mkdir downloads
-          wget https://dl.static-php.dev/static-php-cli/bulk/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz -O downloads/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz
+          wget https://dl.static-php.dev/static-php-cli/bulk/php-${{ matrix.php-version }}-micro-${{ matrix.arch }}.tar.gz -O downloads/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz
           tar -xvzf downloads/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz --directory downloads
 
       - name: "Install Dependencies"
