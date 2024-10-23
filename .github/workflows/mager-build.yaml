@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        release:
+        arch:
           - "linux-x86_64"
           - "linux-aarch64"
           - "macos-x86_64"
@@ -42,11 +42,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-php
 
-      - name: Download Micro With ${{ matrix.php-version }}-${{ matrix-release }}
+      - name: Download Micro With ${{ matrix.php-version }}-${{ matrix.arch }}
         run: |
           mkdir downloads
-          wget https://dl.static-php.dev/static-php-cli/bulk/php-${{ matrix.php-version }}-${{ matrix-release }}.tar.gz -O downloads/php-${{ matrix.php-version }}-${{ matrix-release }}.tar.gz
-          tar -xvzf downloads/php-${{ matrix.php-version }}-${{ matrix.release }}.tar.gz --directory downloads
+          wget https://dl.static-php.dev/static-php-cli/bulk/php-${{ matrix.php-version }}-${{ matrix-arch }}.tar.gz -O downloads/php-${{ matrix.php-version }}-${{ matrix-arch }}.tar.gz
+          tar -xvzf downloads/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz --directory downloads
 
       - name: "Install Dependencies"
         run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
@@ -57,12 +57,12 @@ jobs:
       - name: "Bundle release"
         run: |
           mkdir release
-          cat downloads/micro.sfx build/mager.phar > release/mager-${{ matrix.release }} && chmod +x release/mager-${{ matrix.release }}
+          cat downloads/micro.sfx build/mager.phar > release/mager-${{ matrix.arch }} && chmod +x release/mager-${{ matrix.arch }}
 
       - name: "Upload Artifact"
         uses: actions/upload-artifact@v4
         with:
-          name: mager-${{ matrix.release }}
+          name: mager-${{ matrix.arch }}
           path: |
-            release/mager-${{ matrix.release }}
+            release/mager-${{ matrix.arch }}
           if-no-files-found: error
