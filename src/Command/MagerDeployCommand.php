@@ -9,6 +9,7 @@ use App\Component\Config\DefinitionBuilder;
 use App\Component\Config\ServiceDefinition;
 use App\Component\Server\ExecutorFactory;
 use App\Component\Server\Helper\Traefik\Http;
+use App\Component\Server\Task\DockerCleanupJob;
 use App\Component\Server\Task\DockerServiceCreate;
 use App\Component\Server\Task\DockerServiceUpdate;
 use App\Component\Server\Task\Param;
@@ -21,7 +22,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Webmozart\Assert\Assert;
 
 #[AsCommand(
     name: 'mager:deploy',
@@ -62,7 +62,7 @@ final class MagerDeployCommand extends Command
         $server->setOutputProgress($showOutput);
 
         $version = getenv('APP_VERSION');
-        $version = $version === false ? 'latest' : $version;
+        $version = false === $version ? 'latest' : $version;
 
         // Build target image
         $build = new ArrayInput([
@@ -82,16 +82,25 @@ final class MagerDeployCommand extends Command
          * @var Service $service
          */
         foreach ($definition->services as $service) {
+            $io->info("Executing Before Deploy Hooks {$service->name} ...");
+            foreach ($service->beforeDeploy as $job) {
+                $this->runJob(
+                    job: $job,
+                    namespace: $namespace,
+                    imageName: $imageName,
+                    serviceName: $service->name,
+                    service: $service,
+                    server: $server,
+                );
+            }
 
-            // TODO: run before and after deploy hook
-            $io->info("<info>Deploying {$imageName} ...</info>");
-
+            $io->info("Deploying {$service->name} ...");
             if ($server->isServiceRunning("{$namespace}-{$service->name}")) {
                 $this->updateService(
                     namespace: $namespace,
                     imageName: $imageName,
                     serviceName: $service->name,
-                    server: $server
+                    server: $server,
                 );
             } else {
                 $this->createService(
@@ -99,8 +108,24 @@ final class MagerDeployCommand extends Command
                     imageName: $imageName,
                     serviceName: $service->name,
                     service: $service,
-                    server: $server
+                    server: $server,
                 );
+            }
+
+            $io->info("Executing Before Deploy Hooks {$service->name} ...");
+            foreach ($service->afterDeploy as $job) {
+                $this->runJob(
+                    job: $job,
+                    namespace: $namespace,
+                    imageName: $imageName,
+                    serviceName: $service->name,
+                    service: $service,
+                    server: $server,
+                );
+            }
+
+            if (! empty($service->afterDeploy) || ! empty($service->beforeDeploy)) {
+                $server->exec(DockerCleanupJob::class);
             }
         }
         $progress->finish('Your application has been deployed.');
@@ -110,23 +135,58 @@ final class MagerDeployCommand extends Command
         return Command::SUCCESS;
     }
 
-    public function updateService(
+    private function runJob(
+        string $job,
         string $namespace,
         string $imageName,
         string $serviceName,
-        Server $server
+        Service $service,
+        Server $server,
+    ): void {
+        $constraint = ['node.role==worker'];
+        if ($this->config->isSingleNode($namespace)) {
+            $constraint = ['node.role==manager'];
+        }
+
+        $network = [
+            "{$namespace}-main",
+            Config::MAGER_GLOBAL_NETWORK,
+        ];
+
+        $rand = bin2hex(random_bytes(8));
+        $server->exec(
+            DockerServiceCreate::class,
+            [
+                Param::GLOBAL_NAMESPACE->value => $namespace,
+                Param::DOCKER_SERVICE_IMAGE->value => $imageName,
+                Param::DOCKER_SERVICE_NAME->value => "{$serviceName}-job-{$rand}",
+                Param::DOCKER_SERVICE_MODE->value => 'replicated-job',
+                Param::DOCKER_SERVICE_REPLICAS->value => 1,
+                Param::DOCKER_SERVICE_COMMAND->value => $job,
+                Param::DOCKER_SERVICE_CONSTRAINTS->value => $constraint,
+                Param::DOCKER_SERVICE_NETWORK->value => $network,
+                Param::DOCKER_SERVICE_ENV->value => $service->env,
+            ],
+        );
+    }
+
+    private function updateService(
+        string $namespace,
+        string $imageName,
+        string $serviceName,
+        Server $server,
     ): void {
         $server->exec(
             DockerServiceUpdate::class,
             [
                 Param::GLOBAL_NAMESPACE->value => $namespace,
                 Param::DOCKER_SERVICE_IMAGE->value => $imageName,
-                Param::DOCKER_SERVICE_NAME->value => $serviceName
+                Param::DOCKER_SERVICE_NAME->value => $serviceName,
             ],
         );
     }
 
-    public function createService(
+    private function createService(
         string $namespace,
         string $imageName,
         string $serviceName,
@@ -139,7 +199,7 @@ final class MagerDeployCommand extends Command
             $constraint = ['node.role==manager'];
         }
 
-        $network =[
+        $network = [
             "{$namespace}-main",
             Config::MAGER_GLOBAL_NETWORK,
         ];
@@ -153,7 +213,6 @@ final class MagerDeployCommand extends Command
             $labels[] = Http::port("{$namespace}-{$serviceName}", $port->getPort());
         }
 
-        // TODO: add options for rolling update pause on failed and auto rollback
         $server->exec(
             DockerServiceCreate::class,
             [
@@ -167,6 +226,10 @@ final class MagerDeployCommand extends Command
                 Param::DOCKER_SERVICE_LABEL->value => $labels,
                 Param::DOCKER_SERVICE_MOUNT->value => $service->parseToDockerVolume($namespace),
                 Param::DOCKER_SERVICE_COMMAND->value => implode(' ', $service->cmd),
+                Param::DOCKER_SERVICE_UPDATE_ORDER->value => 'start-first',
+                Param::DOCKER_SERVICE_UPDATE_FAILURE_ACTION->value => 'rollback',
+                Param::DOCKER_SERVICE_LIMIT_CPU->value => $service->option->limitCpu,
+                Param::DOCKER_SERVICE_LIMIT_MEMORY->value => $service->option->limitMemory,
             ],
         );
     }

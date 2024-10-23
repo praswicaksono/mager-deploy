@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Config\Definition;
@@ -12,9 +13,8 @@ final readonly class Proxy
      */
     public function __construct(
         public string $rule,
-        public Collection $ports
-    ) {
-    }
+        public Collection $ports,
+    ) {}
 
     /**
      * @return array{'rule': string, 'ports': array<int, string>}
@@ -23,7 +23,7 @@ final readonly class Proxy
     {
         return [
             'rule' => $this->rule,
-            'ports' => $this->ports->map(function (ProxyPort $port) : string {
+            'ports' => $this->ports->map(function (ProxyPort $port): string {
                 return $port->port;
             })->toArray(),
         ];

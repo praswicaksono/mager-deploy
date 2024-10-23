@@ -22,6 +22,10 @@ final class DockerServiceCreate implements TaskInterface
         $constraints = Helper::getArg(Param::DOCKER_SERVICE_CONSTRAINTS->value, $args, required: false) ?? [];
         /** @var ?string $mode */
         $mode = Helper::getArg(Param::DOCKER_SERVICE_MODE->value, $args, required: false);
+        /** @var ?string $updateOrder */
+        $updateOrder = Helper::getArg(Param::DOCKER_SERVICE_UPDATE_ORDER->value, $args, required: false);
+        /** @var ?string $updateFailureAction */
+        $updateFailureAction = Helper::getArg(Param::DOCKER_SERVICE_UPDATE_FAILURE_ACTION->value, $args, required: false);
         /** @var array|string[] $network */
         $network = Helper::getArg(Param::DOCKER_SERVICE_NETWORK->value, $args, required: false) ?? [];
         /** @var ?string $command */
@@ -36,6 +40,10 @@ final class DockerServiceCreate implements TaskInterface
         $mounts = Helper::getArg(Param::DOCKER_SERVICE_MOUNT->value, $args, required: false) ?? [];
         /** @var int $replicas */
         $replicas = Helper::getArg(Param::DOCKER_SERVICE_REPLICAS->value, $args, required: false) ?? 1;
+        /** @var ?float $limitCpu */
+        $limitCpu = Helper::getArg(Param::DOCKER_SERVICE_LIMIT_CPU->value, $args, required: false) ?? null;
+        /** @var ?string $limitMemory */
+        $limitMemory = Helper::getArg(Param::DOCKER_SERVICE_LIMIT_MEMORY->value, $args, required: false) ?? null;
 
         $cmd = ['docker', 'service', 'create'];
 
@@ -48,11 +56,25 @@ final class DockerServiceCreate implements TaskInterface
 
         $cmd[] = "--name {$namespace}-{$name}";
         $cmd[] = "--replicas {$replicas}";
-        $cmd[] = '--update-order start-first';
-        $cmd[] = '--update-failure-action rollback';
+
+        if (null !== $updateFailureAction) {
+            $cmd[] = "--update-failure-action {$updateFailureAction}";
+        }
+
+        if (null !== $updateOrder) {
+            $cmd[] = "--update-order {$updateOrder}";
+        }
 
         if (null !== $mode) {
             $cmd[] = "--mode {$mode}";
+        }
+
+        if (null !== $limitCpu) {
+            $cmd[] = "--limit-cpu {$limitCpu}";
+        }
+
+        if (null !== $limitMemory) {
+            $cmd[] = "--limit-memory {$limitMemory}";
         }
 
         $cmd[] = $image;

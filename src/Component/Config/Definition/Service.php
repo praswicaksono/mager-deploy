@@ -7,11 +7,11 @@ namespace App\Component\Config\Definition;
 final readonly class Service
 {
     /**
-     * @param array<int, string>    $cmd
-     * @param array<string, string> $env
-     * @param array<int, string>    $volumes
-     * @param array<int, string>    $beforeDeploy
-     * @param array<int, string>    $afterDeploy
+     * @param array<int, string> $cmd
+     * @param array<int, string> $env
+     * @param array<int, string> $volumes
+     * @param array<int, string> $beforeDeploy
+     * @param array<int, string> $afterDeploy
      */
     public function __construct(
         public string $name,
@@ -21,21 +21,31 @@ final readonly class Service
         public array $volumes = [],
         public array $beforeDeploy = [],
         public array $afterDeploy = [],
+        public ?Option $option = null,
     ) {}
 
     /**
-     * @return array<string, string|int|bool|array<string, string>>
+     * @return non-empty-array<string, array{
+     *      'proxy': array{'rule': string, 'ports': array<int, string>},
+     *      'cmd': array<int, string>,
+     *      'env': array{}|array<int, string>,
+     *      'volumes': array{}|array<int, string>,
+     *      'before_deploy': array{}|array<int, string>,
+     *      'after_deploy': array{}|array<int, string>,
+     *      'option': array{'limit_cpu': float, 'limit_memory': string}
+     *  }>
      */
     public function toArray(): array
     {
         return [
             $this->name => [
-                'proxy' =>$this->proxy->toArray(),
+                'proxy' => $this->proxy->toArray(),
                 'cmd' => $this->cmd,
                 'env' => $this->env,
                 'volumes' => $this->volumes,
-                'before-deploy' => $this->beforeDeploy,
+                'before_deploy' => $this->beforeDeploy,
                 'after_deploy' => $this->afterDeploy,
+                'option' => $this->option->toArray(),
             ],
         ];
     }

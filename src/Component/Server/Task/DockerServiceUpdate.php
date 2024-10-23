@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Component\Server\Task;
@@ -19,7 +20,7 @@ final class DockerServiceUpdate implements TaskInterface
         $name = (string) Helper::getArg(Param::DOCKER_SERVICE_NAME->value, $args);
 
         return [
-            implode(' ', ['docker', 'service', 'update', '--image', $image, "--force", "{$namespace}-{$name}"])
+            implode(' ', ['docker', 'service', 'update', '--image', $image, '--force', "{$namespace}-{$name}"]),
         ];
     }
 

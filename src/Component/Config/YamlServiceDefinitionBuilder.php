@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Component\Config;
 
 use App\Component\Config\Definition\Build;
+use App\Component\Config\Definition\Option;
 use App\Component\Config\Definition\Proxy;
 use App\Component\Config\Definition\ProxyPort;
 use App\Component\Config\Definition\Service;
@@ -33,6 +34,11 @@ final class YamlServiceDefinitionBuilder implements DefinitionBuilder
                 ports: new ArrayCollection(array_map(fn(string $port) => new ProxyPort($port), $service['proxy']['ports'] ?? [])),
             );
 
+            $option = new Option(
+                limitCpu: $service['option']['limitCpu'] ?? null,
+                limitMemory: $service['option']['limitMemory'] ?? null,
+            );
+
             $serviceCollection->add(
                 new Service(
                     name: $name,
@@ -40,8 +46,9 @@ final class YamlServiceDefinitionBuilder implements DefinitionBuilder
                     cmd: $service['cmd'] ?? [],
                     env: $service['env'] ?? [],
                     volumes: $service['volumes'] ?? [],
-                    beforeDeploy: $service['beforeDeploy'] ?? [],
-                    afterDeploy: $service['afterDeploy'] ?? [],
+                    beforeDeploy: $service['before_deploy'] ?? [],
+                    afterDeploy: $service['after_deploy'] ?? [],
+                    option: $option,
                 ),
             );
         }

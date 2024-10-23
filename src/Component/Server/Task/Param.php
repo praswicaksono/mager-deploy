@@ -23,6 +23,8 @@ enum Param: string
     case DOCKER_SERVICE_CONSTRAINTS = 'docker.service.constraints';
     case DOCKER_SERVICE_LABEL = 'docker.service.label';
     case DOCKER_SERVICE_MODE = 'docker.service.mode';
+    case DOCKER_SERVICE_UPDATE_ORDER = 'docker.service.update_order';
+    case DOCKER_SERVICE_UPDATE_FAILURE_ACTION = 'docker.service.update_failure_action';
     case DOCKER_SERVICE_NETWORK = 'docker.service.network';
     case DOCKER_SERVICE_IMAGE = 'docker.service.image';
     case DOCKER_SERVICE_COMMAND = 'docker.service.command';

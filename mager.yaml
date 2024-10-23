@@ -5,3 +5,7 @@ services:
       ports:
         - 80/tcp
       rule: Host(`nginx.wip`)
+    after_deploy:
+      - echo 'true'
+    before_deploy:
+      - echo 'true'

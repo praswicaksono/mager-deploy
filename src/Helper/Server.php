@@ -45,9 +45,10 @@ final class Server
     public function exec(string $task, array $args = [], ?callable $onProgress = null, bool $continueOnError = false): ?Result
     {
         try {
-            if ($onProgress === null) {
+            if (null === $onProgress) {
                 $onProgress = $this->outputProgress;
             }
+
             return $this->executor->run($task, $args, $onProgress);
         } catch (FailedCommandException $e) {
             if ($continueOnError) {
