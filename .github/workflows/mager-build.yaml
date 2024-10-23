@@ -64,11 +64,10 @@ jobs:
       - name: "Bundle release"
         run: |
           mkdir release
-          tar -xvzf downloads/php-$PHP_VERSION-linux-x86_64.tar.gz
+          tar -xvzf downloads/php-$PHP_VERSION-linux-x86_64.tar.gz --directory downloads
+          ls -la .
+          ls -la downloads
           cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-linux-x86_64.tar.gz release/mager
-          
-          tar -xvzf downloads/php-$PHP_VERSION-linux-aarch64.tar.gz
-          cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-linux-aarch64.tar.gz release/mager
 
       - name: "Upload Artifact"
         uses: actions/upload-artifact@v4
@@ -76,5 +75,4 @@ jobs:
           name: Mager Unix
           path: |
             release/mager-linux-x86_64.tar.gz
-            release/mager-linux-aarch64.tar.gz
           if-no-files-found: error
