@@ -3,16 +3,18 @@ name: Build Mager Binary
 on:
   workflow_dispatch:
 
-env:
-  PHP_VERSION: "8.3.12"
-
 jobs:
   build-release-artifacts:
-    name: "Build ${{ matrix.php-version }} on ${{ matrix.runner }}"
+    name: "Build ${{ matrix.php-version }} with ${{ matrix.release }} on ${{ matrix.runner }}"
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
+        release:
+          - "linux-x86_64"
+          - "linux-aarch64"
+          - "macos-x86_64"
+          - "macos-aarch64"
         php-version:
           - "8.3.12"
         runner:
@@ -40,21 +42,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-php
 
-      # Cache PHP Binary
-      - id: cache-download
-        uses: actions/cache@v4
-        with:
-          path: downloads
-          key: php-micro-bin
-
-      - name: Download Micro
-        if: ${{ steps.cache-download.outputs.cache-hit != 'true' }}
+      - name: Download Micro With ${{ matrix.php-version }}-${{ matrix-release }}
         run: |
           mkdir downloads
-          wget https://dl.static-php.dev/static-php-cli/bulk/php-$PHP_VERSION-micro-linux-x86_64.tar.gz -O downloads/php-$PHP_VERSION-linux-x86_64.tar.gz
-          wget https://dl.static-php.dev/static-php-cli/bulk/php-$PHP_VERSION-micro-linux-aarch64.tar.gz -O downloads/php-$PHP_VERSION-linux-aarch64.tar.gz
-          wget https://dl.static-php.dev/static-php-cli/bulk/php-$PHP_VERSION-micro-macos-x86_64.tar.gz -O downloads/php-$PHP_VERSION-macos-X86_64.tar.gz
-          wget https://dl.static-php.dev/static-php-cli/bulk/php-$PHP_VERSION-micro-macos-aarch64.tar.gz -O downloads/php-$PHP_VERSION-macos-aarch64.tar.gz
+          wget https://dl.static-php.dev/static-php-cli/bulk/php-${{ matrix.php-version }}-${{ matrix-release }}.tar.gz -O downloads/php-${{ matrix.php-version }}-${{ matrix-release }}.tar.gz
+          tar -xvzf downloads/php-${{ matrix.php-version }}-${{ matrix.release }}.tar.gz --directory downloads
 
       - name: "Install Dependencies"
         run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
@@ -65,24 +57,12 @@ jobs:
       - name: "Bundle release"
         run: |
           mkdir release
-          tar -xvzf downloads/php-$PHP_VERSION-linux-x86_64.tar.gz --directory downloads
-          cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-linux-x86_64.tar.gz release/mager
-          
-          tar -xvzf downloads/php-$PHP_VERSION-linux-aarch64.tar.gz --directory downloads
-          cat downloads/micro.sfx build/mager.phar > release/mager && chmod +x release/mager && tar -czf release/mager-linux-aarch64.tar.gz release/mager
+          cat downloads/micro.sfx build/mager.phar > release/mager-${{ matrix.release }} && chmod +x release/mager-${{ matrix.release }}
 
-      - name: "Upload Mager Linux X86_64 Artifact"
+      - name: "Upload Artifact"
         uses: actions/upload-artifact@v4
         with:
-          name: Mager Linux X86_64
+          name: mager-${{ matrix.release }}
           path: |
-            release/mager-linux-x86_64.tar.gz
-          if-no-files-found: error
-
-      - name: "Upload Mager Linux AARCH64 Artifact"
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mager Linux AARCH64
-          path: |
-            release/mager-linux-aarch64.tar.gz
+            release/mager-${{ matrix.release }}
           if-no-files-found: error
