@@ -11,6 +11,14 @@ services:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
+    _instanceof:
+        Symfony\Component\Console\Command\Command:
+            tags: ['app.commands']
+
+    'app.command_collection':
+        class: App\CommandCollection
+        public: true
+        arguments: [!tagged_iterator 'app.commands']
     App\Component\Config\YamlDefinitionBuilder: ~
 
     App\Component\Config\DefinitionBuilder: '@App\Component\Config\YamlServiceDefinitionBuilder'

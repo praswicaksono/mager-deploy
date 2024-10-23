@@ -1,16 +1,21 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
 
-require __DIR__.'/../vendor/autoload.php';
+use App\Kernel;
+use App\ConsoleApplication;
 
-use Symfony\Component\Console\Application;
-use App\Command\MagerWhoamiCommand;
-use App\Command\MagerInitCommand;
+if (!is_dir(dirname(__DIR__).'/vendor')) {
+    throw new LogicException('Dependencies are missing. Try running "composer install".');
+}
 
-$application = new Application('mager-deploy', '1.0.0');
+if (!is_file(dirname(__DIR__).'/vendor/autoload_runtime.php')) {
+    throw new LogicException('Symfony Runtime is missing. Try running "composer require symfony/runtime".');
+}
 
-$application->add(new MagerInitCommand());
-$application->add(new MagerWhoamiCommand());
+require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
 
-$application->run();
+return function (array $context) {
+    $kernel = new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
+
+    return new ConsoleApplication($kernel);
+};

@@ -79,7 +79,10 @@ final class Server
     {
         /** @var Result<ArrayCollection<int, DockerService>> $res */
         $res = $this->executor->run(DockerServiceList::class, [
-            Param::DOCKER_SERVICE_LIST_FILTER->value => ["name={$containerName}"],
+            Param::DOCKER_SERVICE_LIST_FILTER->value => [
+                "name={$containerName}",
+                'mode=replicated',
+            ],
         ]);
 
         if ($res->data->isEmpty()) {
