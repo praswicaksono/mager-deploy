@@ -16,7 +16,6 @@ use App\Component\Server\Task\Param;
 use App\Helper\Server;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -24,8 +23,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
-    name: 'mager:deploy',
-    description: 'Deploy service based on mager.yaml',
+    name: 'deploy',
+    description: 'Deploy service to target server',
 )]
 final class MagerDeployCommand extends Command
 {
@@ -55,18 +54,14 @@ final class MagerDeployCommand extends Command
         $definition = $this->definitionBuilder->build();
 
         $executor = (new ExecutorFactory($this->config))($namespace);
-        $server = Server::withExecutor($executor);
-        $progress = new ProgressIndicator($output);
-        $progress->start('Starting deployment');
-        $showOutput = $server->showOutput($io, $this->config->isDebug($namespace), $progress);
-        $server->setOutputProgress($showOutput);
+        $server = Server::withExecutor($executor, $io);
 
         $version = getenv('APP_VERSION');
         $version = false === $version ? 'latest' : $version;
 
         // Build target image
         $build = new ArrayInput([
-            'command' => 'mager:build',
+            'command' => 'build',
             '--namespace' => $namespace,
             '--target' => $definition->build->target,
             '--file' => $definition->build->dockerfile,
@@ -128,7 +123,6 @@ final class MagerDeployCommand extends Command
                 $server->exec(DockerCleanupJob::class);
             }
         }
-        $progress->finish('Your application has been deployed.');
 
         $io->success('Your application has been deployed.');
 

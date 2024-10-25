@@ -9,19 +9,17 @@ use App\Component\Server\Task\Param;
 use App\Helper\Server;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Webmozart\Assert\Assert;
 
-use function Amp\async;
 use function Amp\File\exists;
 
 #[AsCommand(
-    name: 'mager:build',
-    description: 'Add a short description for your command',
+    name: 'build',
+    description: 'Build an image for mager.yaml definition',
 )]
 final class MagerBuildCommand extends Command
 {
@@ -83,7 +81,7 @@ final class MagerBuildCommand extends Command
         Assert::true($this->config->isNotEmpty(), "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
 
         $executor = (new ExecutorFactory($this->config))($namespace);
-        $server = Server::withExecutor($executor);
+        $server = Server::withExecutor($executor, $io);
 
         if (! exists($dockerfile)) {
             $io->error('Dockerfile does not exist');
@@ -91,24 +89,15 @@ final class MagerBuildCommand extends Command
             return Command::FAILURE;
         }
 
-        $progress = new ProgressIndicator($output);
-        $showOutput = $server->showOutput($io, $this->config->isDebug($namespace), $progress);
-
         $imageName = "{$namespace}-{$name}:{$version}";
 
-        $progress->start("Building {$imageName}");
-        async(function () use ($server, $imageName, $target, $showOutput) {
-            $server->exec(
-                DockerImageBuild::class,
-                [
-                    Param::DOCKER_IMAGE_TAG->value => $imageName,
-                    Param::DOCKER_IMAGE_TARGET->value => $target,
-                ],
-                $showOutput,
-            );
-        })->await();
-
-        $progress->finish('Image has been built');
+        $server->exec(
+            DockerImageBuild::class,
+            [
+                Param::DOCKER_IMAGE_TAG->value => $imageName,
+                Param::DOCKER_IMAGE_TARGET->value => $target,
+            ],
+        );
 
         $io->success('Your image successfully built');
 

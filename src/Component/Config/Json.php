@@ -58,7 +58,7 @@ final class Json implements Config
 
     public function save(): void
     {
-        write($this->path, $this->config->toJson(options: JSON_PRETTY_PRINT));
+        write($this->path, json_encode($this->config->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
     public function isLocal(): bool

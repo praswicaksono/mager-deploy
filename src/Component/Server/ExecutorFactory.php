@@ -14,13 +14,15 @@ final readonly class ExecutorFactory
 
     public function __invoke(string $namespace, string $role = 'manager'): ExecutorInterface
     {
+        // TODO: Support multiple server in future
         $servers = $this->config->getServers();
         /** @var Server $target */
         $target = $servers->filter(function (Server $server) use ($role): bool {
             return $server->role === $role;
         })->first();
-        $debug = $this->config->isDebug($namespace);
-        $executor = new LocalExecutor($debug);
+
+        $serverName = "{$namespace}-{$target->ip}";
+        $executor = new LocalExecutor($serverName);
 
         if (! $this->config->isLocal()) {
             $ssh = Ssh::create(
@@ -32,7 +34,7 @@ final readonly class ExecutorFactory
                 ->disableStrictHostKeyChecking()
                 ->disablePasswordAuthentication()
                 ->setTimeout(60 * 30);
-            $executor = new RemoteExecutor($ssh, $debug);
+            $executor = new RemoteExecutor($serverName, $ssh);
         }
 
         return $executor;

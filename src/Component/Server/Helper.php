@@ -6,6 +6,8 @@ namespace App\Component\Server;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Process\Process;
 use Webmozart\Assert\Assert;
 
 final class Helper
@@ -66,5 +68,35 @@ final class Helper
         }
 
         return $collection;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function handleProcessOutput(string $prefix, SymfonyStyle $io, Process $process): array
+    {
+        $out = fopen('php://memory', 'r+');
+        $err = fopen('php://memory', 'r+');
+
+        $process->wait(function (string $type, string $buffer) use ($out, $err, $io, $process, $prefix) {
+            $io->block($buffer, prefix: "<info>{$prefix}   |   </info>");
+            if (Process::OUT === $type) {
+                fwrite($out, $buffer);
+            } else {
+                fwrite($err, $buffer);
+            }
+
+            $process->checkTimeout();
+        });
+
+        rewind($out);
+        rewind($err);
+        $outBuffer = stream_get_contents($out);
+        $errBuffer = stream_get_contents($err);
+
+        fclose($out);
+        fclose($err);
+
+        return [$outBuffer, $errBuffer];
     }
 }

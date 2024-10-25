@@ -17,10 +17,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Webmozart\Assert\Assert;
 
-use function Amp\async;
-
 #[AsCommand(
-    name: 'mager:service',
+    name: 'services',
     description: 'Show list of running services',
 )]
 final class MagerServiceCommand extends Command
@@ -45,19 +43,17 @@ final class MagerServiceCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $namespace = $input->getOption('namespace') ?? null;
-        $config = $this->config->get("server.{$namespace}");
+        $namespace = $input->getOption('namespace') ?? 'local';
+        $config = $this->config->get($namespace);
 
         Assert::notEmpty($namespace, '--namespace must be a non-empty string');
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
 
         $executor = (new ExecutorFactory($this->config))($namespace);
-        $server = Server::withExecutor($executor);
+        $server = Server::withExecutor($executor, $io);
 
         /** @var Result<ArrayCollection<int, DockerService>> $result */
-        $result = async(function () use ($server) {
-            return $server->exec(DockerServiceList::class);
-        })->await();
+        $result = $server->exec(DockerServiceList::class);
         /** @var ArrayCollection<int, DockerService> $collection */
         $collection = $result->data;
 

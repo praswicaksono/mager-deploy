@@ -13,20 +13,19 @@ use App\Component\Server\Task\DockerServiceList;
 use App\Component\Server\Task\Param;
 use App\Component\Server\TaskInterface;
 use Doctrine\Common\Collections\ArrayCollection;
-use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Process\Process;
 
 final class Server
 {
     private ExecutorInterface $executor;
 
-    private \Closure $outputProgress;
+    private SymfonyStyle $io;
 
-    public static function withExecutor(ExecutorInterface $executor): Server
+    public static function withExecutor(ExecutorInterface $executor, SymfonyStyle $io): Server
     {
         $obj = new Server();
         $obj->executor = $executor;
+        $obj->io = $io;
 
         return $obj;
     }
@@ -34,22 +33,17 @@ final class Server
     /**
      * @template T
      *
-     * @param class-string<TaskInterface<T>>      $task
-     * @param array<string|int, mixed>            $args
-     * @param callable(string, string): void|null $onProgress
+     * @param class-string<TaskInterface<T>> $task
+     * @param array<string|int, mixed>       $args
      *
      * @return ?Result<T>
      *
      * @throws FailedCommandException
      */
-    public function exec(string $task, array $args = [], ?callable $onProgress = null, bool $continueOnError = false): ?Result
+    public function exec(string $task, array $args = [], bool $continueOnError = false): ?Result
     {
         try {
-            if (null === $onProgress) {
-                $onProgress = $this->outputProgress;
-            }
-
-            return $this->executor->run($task, $args, $onProgress);
+            return $this->executor->run($this->io, $task, $args);
         } catch (FailedCommandException $e) {
             if ($continueOnError) {
                 return null;
@@ -62,7 +56,7 @@ final class Server
     public function isDockerSwarmEnabled(): bool
     {
         try {
-            $this->executor->run(DockerNodeList::class);
+            $this->executor->run($this->io, DockerNodeList::class);
         } catch (FailedCommandException $e) {
             return false;
         }
@@ -78,7 +72,7 @@ final class Server
     public function isServiceRunning(string $containerName): bool
     {
         /** @var Result<ArrayCollection<int, DockerService>> $res */
-        $res = $this->executor->run(DockerServiceList::class, [
+        $res = $this->executor->run($this->io, DockerServiceList::class, [
             Param::DOCKER_SERVICE_LIST_FILTER->value => [
                 "name={$containerName}",
                 'mode=replicated',
@@ -90,30 +84,6 @@ final class Server
         }
 
         return true;
-    }
-
-    /**
-     * @return callable(string, string): void
-     */
-    public function showOutput(SymfonyStyle $io, bool $debug, ProgressIndicator $progress): callable
-    {
-        return function (string $type, string $buffer) use ($io, $debug, $progress): void {
-            if (Process::ERR === $type) {
-                if ($debug) {
-                    $io->warning($buffer);
-                }
-            } else {
-                $progress->advance();
-                if ($debug) {
-                    $io->write($buffer);
-                }
-            }
-        };
-    }
-
-    public function setOutputProgress(callable $outputProgress): void
-    {
-        $this->outputProgress = $outputProgress;
     }
 
     /**

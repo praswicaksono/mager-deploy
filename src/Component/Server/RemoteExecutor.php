@@ -5,43 +5,21 @@ declare(strict_types=1);
 namespace App\Component\Server;
 
 use Spatie\Ssh\Ssh;
-use Symfony\Component\Process\Process;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 final readonly class RemoteExecutor implements ExecutorInterface
 {
-    public function __construct(private Ssh $conn, public bool $debug = false) {}
+    public function __construct(private string $serverName, private Ssh $conn) {}
 
-    public function run(string $task, array $args = [], ?callable $onProgress = null): Result
+    public function run(SymfonyStyle $io, string $task, array $args = []): Result
     {
         $command = implode(PHP_EOL, $task::exec($args));
-        if ($this->debug) {
-            fwrite(STDOUT, $command . PHP_EOL);
-        }
+
+        $io->title($command);
 
         $process = $this->conn->executeAsync($command);
-        $out = fopen('php://memory', 'r+');
-        $err = fopen('php://memory', 'r+');
 
-        $process->wait(function (string $type, string $buffer) use ($out, $err, $onProgress, $process) {
-            match (true) {
-                Process::ERR == $type => fwrite($err, $buffer),
-                default => fwrite($out, $buffer),
-            };
-
-            if (is_callable($onProgress)) {
-                $onProgress($type, $buffer);
-            }
-
-            $process->checkTimeout();
-        });
-
-        rewind($out);
-        rewind($err);
-        $outBuffer = stream_get_contents($out);
-        $errBuffer = stream_get_contents($err);
-
-        fclose($out);
-        fclose($err);
+        [$outBuffer, $errBuffer] = Helper::handleProcessOutput($this->serverName, $io, $process);
 
         return new Result((new $task())->result($process->getExitCode(), $outBuffer, $errBuffer));
     }
