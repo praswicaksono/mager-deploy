@@ -1,6 +1,7 @@
 {
   "main": "bin/mager",
   "directories": ["config", "src", "vendor", "var"],
+  "files": [".env"],
   "finder": [
     {
       "name": "*.php",

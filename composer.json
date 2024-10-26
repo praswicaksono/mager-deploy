@@ -56,7 +56,8 @@
             "./bin/console cache:clear --env=prod --no-debug",
             "./bin/console cache:warmup --env=prod",
             "composer dumpautoload --optimize --no-dev",
-            "./vendor/bin/box compile -vvv"
+            "./vendor/bin/box compile -vvv",
+            "composer install"
         ],
         "cs": ["./vendor/bin/php-cs-fixer check --diff"],
         "cs:fix": ["./vendor/bin/php-cs-fixer fix src"],
