@@ -19,7 +19,7 @@ use Webmozart\Assert\Assert;
     name: 'namespace:del',
     description: 'Remove namespace and its installed service',
 )]
-class NamespaceDelCommand extends Command
+final class NamespaceDelCommand extends Command
 {
     public function __construct(
         private readonly Config $config,

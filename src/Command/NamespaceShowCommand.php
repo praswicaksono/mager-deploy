@@ -11,14 +11,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Webmozart\Assert\Assert;
 
-use function Amp\File\createDirectory;
-use function Amp\File\write;
-
 #[AsCommand(
-    name: 'namespace:dump',
-    description: 'Dump namespace configuration to current directory',
+    name: 'namespace:show',
+    description: 'Show detailed namespace configuration in JSON',
 )]
-final class NamespaceDumpCommand extends Command
+class NamespaceShowCommand extends Command
 {
     public function __construct(
         private readonly Config $config,
@@ -41,11 +38,7 @@ final class NamespaceDumpCommand extends Command
         $config = $this->config->get($namespace);
         Assert::notEmpty($config, "Namespace {$namespace} are not exists");
 
-        $dir = '.mager';
-        createDirectory($dir, 0755);
-        write($dir . '/config.json', json_encode($config, JSON_PRETTY_PRINT));
-
-        $io->success('Namespace configuration was successfully dumped!');
+        $io->write(json_encode($config, JSON_PRETTY_PRINT));
 
         return Command::SUCCESS;
     }

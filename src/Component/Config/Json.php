@@ -125,4 +125,9 @@ final class Json implements Config
     {
         return $this->get("{$namespace}.proxy_password");
     }
+
+    public function all(): array
+    {
+        return $this->config->all();
+    }
 }
