@@ -17,8 +17,8 @@ use App\Helper\Server;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -37,11 +37,11 @@ final class MagerDeployCommand extends Command
 
     protected function configure(): void
     {
-        $this->addOption(
+        $this->addArgument(
             'namespace',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'Target namespace',
+            InputArgument::OPTIONAL,
+            'Deploy service to servers that listed for given namespace',
+            'local',
         );
     }
 
@@ -49,7 +49,7 @@ final class MagerDeployCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $namespace = $input->getOption('namespace') ?? 'local';
+        $namespace = $input->getArgument('namespace');
         /** @var ServiceDefinition $definition */
         $definition = $this->definitionBuilder->build();
 

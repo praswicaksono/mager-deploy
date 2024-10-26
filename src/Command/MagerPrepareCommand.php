@@ -15,8 +15,8 @@ use App\Component\Server\Task\Param;
 use App\Helper\Server;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use App\Component\Config\Config;
@@ -42,18 +42,18 @@ final class MagerPrepareCommand extends Command
 
     protected function configure(): void
     {
-        $this->addOption(
+        $this->addArgument(
             'namespace',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'Define which namespace should be prepared',
+            InputArgument::OPTIONAL,
+            'Prepare servers that listed for given namespace',
+            'local',
         );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->io = new SymfonyStyle($input, $output);
-        $namespace = $input->getOption('namespace') ?? 'local';
+        $namespace = $input->getArgument('namespace');
 
         // TODO: refactor later to support multinode preparation
         /** @var ServerConfig $serverConfig */

@@ -7,6 +7,7 @@ namespace App\Component\Server;
 use App\Component\Config\Config;
 use App\Component\Config\Data\Server;
 use Spatie\Ssh\Ssh;
+use Symfony\Component\Process\Process;
 
 final readonly class ExecutorFactory
 {
@@ -33,6 +34,9 @@ final readonly class ExecutorFactory
                 ->usePrivateKey($target->keyPath)
                 ->disableStrictHostKeyChecking()
                 ->disablePasswordAuthentication()
+                ->configureProcess(function (Process $process) {
+                    $process->setTty(true);
+                })
                 ->setTimeout(60 * 30);
             $executor = new RemoteExecutor($serverName, $ssh);
         }

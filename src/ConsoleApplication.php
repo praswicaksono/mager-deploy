@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App;
 
 use Symfony\Bundle\FrameworkBundle\Console\Application;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 final class ConsoleApplication extends Application
@@ -16,11 +15,6 @@ final class ConsoleApplication extends Application
         private KernelInterface $kernel,
     ) {
         parent::__construct($this->kernel);
-
-        $inputDefinition = $this->getDefinition();
-        $inputDefinition->addOption(new InputOption('--env', '-e', InputOption::VALUE_REQUIRED, 'The Environment name.', $kernel->getEnvironment()));
-        $inputDefinition->addOption(new InputOption('--no-debug', null, InputOption::VALUE_NONE, 'Switch off debug mode.'));
-        $inputDefinition->addOption(new InputOption('--profile', null, InputOption::VALUE_NONE, 'Enables profiling (requires debug).'));
     }
 
     protected function registerCommands(): void
@@ -28,6 +22,9 @@ final class ConsoleApplication extends Application
         if ($this->commandsRegistered) {
             return;
         }
+
+        $definition = $this->getDefinition();
+        $definition->setOptions();
 
         $this->commandsRegistered = true;
 

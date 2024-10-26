@@ -73,13 +73,16 @@ final class Helper
     /**
      * @return array<int, string>
      */
-    public static function handleProcessOutput(string $prefix, SymfonyStyle $io, Process $process): array
+    public static function handleProcessOutput(string $prefix, SymfonyStyle $io, Process $process, bool $showOutput = true): array
     {
         $out = fopen('php://memory', 'r+');
         $err = fopen('php://memory', 'r+');
 
-        $process->wait(function (string $type, string $buffer) use ($out, $err, $io, $process, $prefix) {
-            $io->block($buffer, prefix: "<info>{$prefix}   |   </info>");
+        $process->wait(function (string $type, string $buffer) use ($out, $err, $io, $process, $prefix, $showOutput) {
+            if ($showOutput) {
+                $io->block($buffer, prefix: "<info>{$prefix}   |   </info>");
+            }
+
             if (Process::OUT === $type) {
                 fwrite($out, $buffer);
             } else {

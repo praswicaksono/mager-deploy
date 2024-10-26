@@ -40,10 +40,10 @@ final class Server
      *
      * @throws FailedCommandException
      */
-    public function exec(string $task, array $args = [], bool $continueOnError = false): ?Result
+    public function exec(string $task, array $args = [], bool $continueOnError = false, bool $showOutput = true): ?Result
     {
         try {
-            return $this->executor->run($this->io, $task, $args);
+            return $this->executor->run($this->io, $task, $args, $showOutput);
         } catch (FailedCommandException $e) {
             if ($continueOnError) {
                 return null;

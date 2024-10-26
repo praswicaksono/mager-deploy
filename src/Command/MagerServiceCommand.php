@@ -7,12 +7,13 @@ use App\Component\Server\Docker\DockerService;
 use App\Component\Server\ExecutorFactory;
 use App\Component\Server\Result;
 use App\Component\Server\Task\DockerServiceList;
+use App\Component\Server\Task\Param;
 use App\Helper\Server;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Webmozart\Assert\Assert;
@@ -31,11 +32,11 @@ final class MagerServiceCommand extends Command
 
     protected function configure(): void
     {
-        $this->addOption(
+        $this->addArgument(
             'namespace',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'Create namespace for the project',
+            InputArgument::OPTIONAL,
+            'Namespace',
+            'local',
         );
     }
 
@@ -43,7 +44,7 @@ final class MagerServiceCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $namespace = $input->getOption('namespace') ?? 'local';
+        $namespace = $input->getArgument('namespace');
         $config = $this->config->get($namespace);
 
         Assert::notEmpty($namespace, '--namespace must be a non-empty string');
@@ -53,25 +54,29 @@ final class MagerServiceCommand extends Command
         $server = Server::withExecutor($executor, $io);
 
         /** @var Result<ArrayCollection<int, DockerService>> $result */
-        $result = $server->exec(DockerServiceList::class);
+        $result = $server->exec(
+            DockerServiceList::class,
+            [
+                Param::DOCKER_SERVICE_LIST_FILTER->value => [
+                    "name={$namespace}-",
+                ],
+            ],
+            continueOnError: true,
+            showOutput: false,
+        );
         /** @var ArrayCollection<int, DockerService> $collection */
         $collection = $result->data;
 
         $table = $io->createTable();
-        $table->setHeaders(['ID', 'Namespace', 'App', 'Image', 'Ports']);
+        $table->setHeaders(['ID', 'Namespace', 'App', 'Image']);
 
         foreach ($collection as $service) {
-            if (str_ends_with($service->name, 'mager_proxy') || str_ends_with($service->name, 'mager_pac')) {
-                continue;
-            }
-
             $table->addRow(
                 [
                     $service->id,
                     $namespace,
                     str_replace("{$namespace}-", '', $service->name),
                     $service->image,
-                    $service->ports,
                 ],
             );
         }

@@ -19,6 +19,8 @@ interface Config
 
     public function set(string $key, mixed $value = null): self;
 
+    public function delete(string $key): self;
+
     public function get(string $key, mixed $default = null): mixed;
 
     public function isLocal(): bool;

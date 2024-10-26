@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Command;
+
+use App\Component\Config\Config;
+use App\Component\Server\ExecutorFactory;
+use App\Component\Server\Task\DockerServiceRemoveByNamespace;
+use App\Component\Server\Task\Param;
+use App\Helper\Server;
+use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
+use Webmozart\Assert\Assert;
+
+#[AsCommand(
+    name: 'namespace:del',
+    description: 'Remove namespace and its installed service',
+)]
+class NamespaceDelCommand extends Command
+{
+    public function __construct(
+        private readonly Config $config,
+    ) {
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this
+            ->addArgument('namespace', InputArgument::REQUIRED, 'Namespace name')
+        ;
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $io = new SymfonyStyle($input, $output);
+        $namespace = $input->getArgument('namespace');
+
+        $config = $this->config->get($namespace);
+        Assert::notEmpty($config, "Namespace {$namespace} are not exists");
+
+        $executor = (new ExecutorFactory($this->config))($namespace);
+        $server = Server::withExecutor($executor, $io);
+
+        $server->exec(
+            DockerServiceRemoveByNamespace::class,
+            [
+                Param::GLOBAL_NAMESPACE->value => $namespace,
+            ],
+            continueOnError: true,
+            showOutput: false,
+        );
+
+        $this->config->delete($namespace)->save();
+
+        $io->success('Namespace has been deleted and services successfully removed');
+
+        return Command::SUCCESS;
+    }
+}

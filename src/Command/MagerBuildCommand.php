@@ -20,6 +20,7 @@ use function Amp\File\exists;
 #[AsCommand(
     name: 'build',
     description: 'Build an image for mager.yaml definition',
+    hidden: true,
 )]
 final class MagerBuildCommand extends Command
 {

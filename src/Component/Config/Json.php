@@ -38,6 +38,13 @@ final class Json implements Config
             $json = '{}';
         }
 
+        try {
+            $json = read('.mager/config.json');
+            $path = '.mager/config.json';
+        } catch (\Exception) {
+
+        }
+
         $object->config = \dot(json_decode($json, true));
         $object->path = $path;
 
@@ -52,6 +59,13 @@ final class Json implements Config
     public function set(string $key, mixed $value = null): Config
     {
         $this->config->set($key, $value);
+
+        return $this;
+    }
+
+    public function delete(string $key): Config
+    {
+        $this->config->delete($key);
 
         return $this;
     }

@@ -16,5 +16,5 @@ interface ExecutorInterface
      *
      * @return Result<T>
      */
-    public function run(SymfonyStyle $io, string $task, array $args = []): Result;
+    public function run(SymfonyStyle $io, string $task, array $args = [], bool $showOutput = true): Result;
 }
