@@ -132,6 +132,7 @@ final class PrepareCommand extends Command
             '--entrypoints.web.http.redirections.entrypoint.to=websecure',
             '--entryPoints.web.http.redirections.entrypoint.scheme=https',
             '--entrypoints.websecure.address=:443',
+            '--entryPoints.websecure.http3'
         ];
 
         $letsEncryptResolver = [
@@ -189,7 +190,7 @@ final class PrepareCommand extends Command
                 Param::DOCKER_SERVICE_NAME->value => 'mager_proxy',
                 Param::DOCKER_SERVICE_NETWORK->value => ["{$namespace}-main", 'host'],
                 Param::DOCKER_SERVICE_CONSTRAINTS->value => ['node.role==manager'],
-                Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['80:80', '443:443'],
+                Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['80:80', '443:443/tcp', '443:443/udp'],
                 Param::DOCKER_SERVICE_LABEL->value => $dynamicConfig,
                 Param::DOCKER_SERVICE_MOUNT->value => [
                     'type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock',

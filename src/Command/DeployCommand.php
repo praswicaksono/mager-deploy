@@ -109,7 +109,7 @@ final class DeployCommand extends Command
                 );
             }
 
-            $io->info("Executing Before Deploy Hooks {$service->name} ...");
+            $io->info("Executing After Deploy Hooks {$service->name} ...");
             foreach ($service->afterDeploy as $job) {
                 $this->runJob(
                     job: $job,
@@ -203,6 +203,8 @@ final class DeployCommand extends Command
         $labels = [];
 
         // TODO: enable tls
+        $labels[] = 'traefik.docker.lbswarm=true';
+        $labels[] = 'traefik.enable=true';
         $labels[] = Http::rule("{$namespace}-{$serviceName}", $service->proxy->rule);
         /** @var ProxyPort $port */
         foreach ($service->proxy->ports as $port) {
