@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Component\Config\Config;
@@ -19,10 +21,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Webmozart\Assert\Assert;
 
 #[AsCommand(
-    name: 'services',
-    description: 'Show list of running services',
+    name: 'service:ls',
+    description: 'List of running services',
 )]
-final class MagerServiceCommand extends Command
+final class ServiceLsCommand extends Command
 {
     public function __construct(
         private readonly Config $config,

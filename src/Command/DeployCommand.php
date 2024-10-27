@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Component\Config\Config;
@@ -26,7 +28,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'deploy',
     description: 'Deploy service to target server',
 )]
-final class MagerDeployCommand extends Command
+final class DeployCommand extends Command
 {
     public function __construct(
         private readonly Config $config,

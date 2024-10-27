@@ -1,12 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Command;
 
 use App\Component\Config\Config;
 use App\Component\Server\ExecutorFactory;
-use App\Component\Server\Task\DockerServiceRemoveByNamespace;
+use App\Component\Server\Task\DockerServiceRemoveByServiceName;
 use App\Component\Server\Task\Param;
 use App\Helper\Server;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -15,13 +13,12 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Webmozart\Assert\Assert;
 
 #[AsCommand(
-    name: 'namespace:del',
-    description: 'Remove namespace and its installed service',
+    name: 'service:del',
+    description: 'Delete and stop running service',
 )]
-final class NamespaceDelCommand extends Command
+class ServiceDelCommand extends Command
 {
     public function __construct(
         private readonly Config $config,
@@ -33,6 +30,7 @@ final class NamespaceDelCommand extends Command
     {
         $this
             ->addArgument('namespace', InputArgument::REQUIRED, 'Namespace name')
+            ->addArgument('name', InputArgument::REQUIRED, 'Service name')
         ;
     }
 
@@ -40,25 +38,18 @@ final class NamespaceDelCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $namespace = $input->getArgument('namespace');
-
-        $config = $this->config->get($namespace);
-        Assert::notEmpty($config, "Namespace {$namespace} are not exists");
+        $name = $input->getArgument('name');
 
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor, $io);
 
         $server->exec(
-            DockerServiceRemoveByNamespace::class,
-            [
-                Param::GLOBAL_NAMESPACE->value => $namespace,
-            ],
-            continueOnError: true,
+            DockerServiceRemoveByServiceName::class,
+            [Param::DOCKER_SERVICE_NAME->value => "{$namespace}-{$name}"],
             showOutput: false,
         );
 
-        $this->config->delete($namespace)->save();
-
-        $io->success('Namespace has been deleted and services successfully removed');
+        $io->success('Your service has been deleted.');
 
         return Command::SUCCESS;
     }

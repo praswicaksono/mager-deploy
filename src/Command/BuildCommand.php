@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Component\Config\Config;
@@ -22,7 +24,7 @@ use function Amp\File\exists;
     description: 'Build an image for mager.yaml definition',
     hidden: true,
 )]
-final class MagerBuildCommand extends Command
+final class BuildCommand extends Command
 {
     public function __construct(
         private readonly Config $config,

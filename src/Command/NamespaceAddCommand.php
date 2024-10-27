@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Component\Config\Config;
@@ -17,7 +19,7 @@ use Webmozart\Assert\Assert;
     name: 'namespace:add',
     description: 'Add new namespace',
 )]
-class NamespaceAddCommand extends Command
+final class NamespaceAddCommand extends Command
 {
     public function __construct(
         private readonly Config $config,

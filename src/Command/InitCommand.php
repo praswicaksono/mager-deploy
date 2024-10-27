@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Component\Config\Config;
@@ -17,7 +19,7 @@ use Webmozart\Assert\Assert;
     name: 'init',
     description: 'Initialize mager configuration',
 )]
-final class MagerInitCommand extends Command
+final class InitCommand extends Command
 {
     private SymfonyStyle $io;
 

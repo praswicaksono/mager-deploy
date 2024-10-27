@@ -25,7 +25,7 @@ use App\Component\Config\Config;
     name: 'prepare',
     description: 'Prepare server by installing required package',
 )]
-final class MagerPrepareCommand extends Command
+final class PrepareCommand extends Command
 {
     private const string TRAEFIK_DASHBOARD_NAME = 'magerdashboard';
     private const string TRAEFIK_PAC_NAME = 'pac';

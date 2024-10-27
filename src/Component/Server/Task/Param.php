@@ -19,6 +19,7 @@ enum Param: string
     case DOCKER_STACK_DEPLOY_APP_NAME = 'docker.stack.deploy.app_name';
     case DOCKER_NETWORK_CREATE_DRIVER = 'docker.network.create.driver';
     case DOCKER_NETWORK_NAME = 'docker.network.name';
+    case DOCKER_SERVICE_ID = 'docker.service.id';
     case DOCKER_SERVICE_NAME = 'docker.service.name';
     case DOCKER_SERVICE_CONSTRAINTS = 'docker.service.constraints';
     case DOCKER_SERVICE_LABEL = 'docker.service.label';

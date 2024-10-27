@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Component\Config\Config;
@@ -15,7 +17,7 @@ use Webmozart\Assert\Assert;
     name: 'namespace:show',
     description: 'Show detailed namespace configuration in JSON',
 )]
-class NamespaceShowCommand extends Command
+final class NamespaceShowCommand extends Command
 {
     public function __construct(
         private readonly Config $config,
