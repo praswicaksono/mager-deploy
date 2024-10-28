@@ -15,6 +15,7 @@ use App\Component\Server\Task\Param;
 use App\Component\Server\TaskInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Yaml\Yaml;
 
 use function Amp\File\createDirectory;
 use function Amp\File\isDirectory;
@@ -111,5 +112,24 @@ final class Server
         ]);
     }
 
-    public function registerTLSCertificate(string $namespace, string $domain): void {}
+    public function registerTLSCertificate(string $domain): void
+    {
+        $path = getenv('HOME') . '/.mager/dynamic.yaml';
+        $arr = Yaml::parse(file_get_contents($path));
+
+        $certs = $arr['tls']['certificates'] ?? [];
+
+        foreach ($certs as $cert) {
+            if (str_contains($cert['certFile'], $domain)) {
+                return;
+            }
+        }
+
+        $arr['tls']['certificates'][] = [
+            'certFile' => "/var/certs/{$domain}.pem",
+            'keyFile' => "/var/certs/{$domain}-key.pem",
+        ];
+
+        file_put_contents($path, Yaml::dump($arr));
+    }
 }

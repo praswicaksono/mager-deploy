@@ -114,6 +114,10 @@ final class DeployCommand extends Command
                 );
             }
 
+            if ($this->config->get("{$namespace}.is_local")) {
+                $server->registerTLSCertificate($service->proxy->host);
+            }
+
             $io->info("Executing After Deploy Hooks {$service->name} ...");
             foreach ($service->afterDeploy as $job) {
                 $this->runJob(
@@ -216,10 +220,13 @@ final class DeployCommand extends Command
             $rule = str_replace('{$host}', $service->proxy->host, $service->proxy->rule);
         }
 
-        $labels[] = Http::rule("{$namespace}-{$serviceName}", $rule);
+        $fullServiceName = "{$namespace}-{$serviceName}";
+        $labels[] = Http::rule($fullServiceName, $rule);
+        $labels[] = Http::tls($fullServiceName);
+
         /** @var ProxyPort $port */
         foreach ($service->proxy->ports as $port) {
-            $labels[] = Http::port("{$namespace}-{$serviceName}", $port->getPort());
+            $labels[] = Http::port($fullServiceName, $port->getPort());
         }
 
         $server->exec(

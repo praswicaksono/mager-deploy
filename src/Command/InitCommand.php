@@ -92,6 +92,8 @@ final class InitCommand extends Command
         $this->config->set("{$namespace}.is_single_node", true);
         $this->config->set('global_network', $globalNetwork);
 
+        \Amp\File\touch(getenv('HOME') . '/.mager/dynamic.yaml');
+
         $this->config->save();
     }
 

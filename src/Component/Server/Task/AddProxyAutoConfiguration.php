@@ -18,8 +18,12 @@ final class AddProxyAutoConfiguration implements TaskInterface
 
         $pac = <<<PAC
 function FindProxyForURL(url, host) {
+  if (shExpMatch(host, "*.wip:8080")) {
+    return "PROXY 127.0.0.1:8080";
+  }
+  
   if (shExpMatch(host, "*.wip")) {
-    return "PROXY 127.0.0.1:80";
+    return "HTTPS 127.0.0.1:443";
   }
   return "DIRECT";
 }

@@ -23,6 +23,11 @@ final class Http
         return "traefik.http.services.{$name}.loadbalancer.server.port={$port}";
     }
 
+    public static function tls(string $name): string
+    {
+        return "traefik.http.routers.{$name}.tls=true";
+    }
+
     public static function middleware(string $name, string $middleware): string
     {
         return "traefik.http.routers.{$name}.middlewares={$middleware}";

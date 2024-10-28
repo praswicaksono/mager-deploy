@@ -7,7 +7,7 @@ namespace App\Command;
 use App\Component\Config\Data\Server as ServerConfig;
 use App\Component\Server\ExecutorFactory;
 use App\Component\Server\Helper\Traefik\Http;
-use App\Component\Server\Task\AddProxyAutoConfiguration;
+use App\Component\Server\Task\DockerCleanupJob;
 use App\Component\Server\Task\DockerNetworkCreate;
 use App\Component\Server\Task\DockerServiceCreate;
 use App\Component\Server\Task\DockerSwarmInit;
@@ -28,7 +28,6 @@ use App\Component\Config\Config;
 final class PrepareCommand extends Command
 {
     private const string TRAEFIK_DASHBOARD_NAME = 'magerdashboard';
-    private const string TRAEFIK_PAC_NAME = 'pac';
 
     private SymfonyStyle $io;
 
@@ -114,13 +113,6 @@ final class PrepareCommand extends Command
     {
         $isLocal = 'local' === $namespace;
 
-        // Write auto proxy configuration if namespace is local for development purpose
-        if ($isLocal) {
-            $this->server->exec(
-                AddProxyAutoConfiguration::class,
-            );
-        }
-
         if ($this->server->isProxyRunning($namespace)) {
             $this->io->warning("Traefik proxy already running for {$namespace} namespace");
 
@@ -150,35 +142,30 @@ final class PrepareCommand extends Command
             "--providers.swarm.network={$namespace}-main",
             '--providers.docker.exposedByDefault=false',
             '--entrypoints.web.address=:80',
-            '--experimental.plugins.traefik-plugin-waeb.modulename=github.com/tomMoulard/traefik-plugin-waeb',
-            '--experimental.plugins.traefik-plugin-waeb.version=v1.0.1',
+            '--providers.file.filename=/var/traefik/dynamic.yaml',
         ];
 
         $staticConfig = array_merge($staticConfig, $httpsEntryPoint);
+
         if (!$isLocal) {
             $staticConfig = array_merge($staticConfig, $letsEncryptResolver);
         }
 
-        // Prepare traefik dynamic config for dashboard and proxy auto configuration
+        $proxyDomain = $this->config->getProxyDashboard($namespace);
         $dynamicConfig = [
             'traefik.enable=true',
-            Http::host(self::TRAEFIK_DASHBOARD_NAME, $this->config->getProxyDashboard($namespace)),
+            Http::host(self::TRAEFIK_DASHBOARD_NAME, $proxyDomain),
             Http::port(self::TRAEFIK_DASHBOARD_NAME, 80),
             Http::middleware(self::TRAEFIK_DASHBOARD_NAME, 'dashboardauth'),
             Http::service(self::TRAEFIK_DASHBOARD_NAME, 'api@internal'),
+            Http::tls(self::TRAEFIK_DASHBOARD_NAME),
             "traefik.http.middlewares.dashboardauth.basicauth.users={$this->config->getProxyUser($namespace)}:{$this->config->getProxyPassword($namespace)}",
         ];
 
-        $pacConfig = [
-            "'traefik.http.routers.pac.rule=PathRegexp(`\.(pac)$`)'",
-            Http::port(self::TRAEFIK_PAC_NAME, 80),
-            Http::service(self::TRAEFIK_PAC_NAME, 'api@internal'),
-            Http::middleware(self::TRAEFIK_PAC_NAME, 'static-file'),
-            'traefik.http.middlewares.static-file.plugin.traefik-plugin-waeb.root=/var/www/html/',
-        ];
-
         if ($isLocal) {
-            $dynamicConfig = array_merge($dynamicConfig, $pacConfig);
+            $this->server->generateTLSCertificate($namespace, $proxyDomain);
+            $this->server->registerTLSCertificate($proxyDomain);
+            $this->server->exec(DockerCleanupJob::class);
         }
 
         $home = getenv('HOME');
@@ -195,7 +182,8 @@ final class PrepareCommand extends Command
                 Param::DOCKER_SERVICE_LABEL->value => $dynamicConfig,
                 Param::DOCKER_SERVICE_MOUNT->value => [
                     'type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock',
-                    "type=bind,source={$home}/.mager/proxy.pac,destination=/var/www/html/proxy.pac",
+                    "type=bind,source={$home}/.mager/certs,destination=/var/certs",
+                    "type=bind,source={$home}/.mager/dynamic.yaml,destination=/var/traefik/dynamic.yaml",
                     "type=volume,source={$namespace}-proxy_letsencrypt,destination=/letsencrypt",
                 ],
                 Param::DOCKER_SERVICE_COMMAND->value => implode(' ', $staticConfig),
