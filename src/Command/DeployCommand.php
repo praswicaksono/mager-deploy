@@ -13,7 +13,7 @@ use App\Component\Server\ExecutorFactory;
 use App\Component\Server\Helper\Traefik\Http;
 use App\Component\Server\Task\DockerCleanupJob;
 use App\Component\Server\Task\DockerServiceCreate;
-use App\Component\Server\Task\DockerServiceUpdate;
+use App\Component\Server\Task\DockerServiceUpdateImage;
 use App\Component\Server\Task\Param;
 use App\Helper\Server;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -79,6 +79,11 @@ final class DeployCommand extends Command
          * @var Service $service
          */
         foreach ($definition->services as $service) {
+            if ($this->config->get("{$namespace}.is_local")) {
+                $io->info("Generate TLS Certificate for {$service->proxy->host}");
+                $this->setupTls($namespace, $service, $server);
+            }
+
             $io->info("Executing Before Deploy Hooks {$service->name} ...");
             foreach ($service->beforeDeploy as $job) {
                 $this->runJob(
@@ -173,7 +178,7 @@ final class DeployCommand extends Command
         Server $server,
     ): void {
         $server->exec(
-            DockerServiceUpdate::class,
+            DockerServiceUpdateImage::class,
             [
                 Param::GLOBAL_NAMESPACE->value => $namespace,
                 Param::DOCKER_SERVICE_IMAGE->value => $imageName,
@@ -205,7 +210,13 @@ final class DeployCommand extends Command
         // TODO: enable tls
         $labels[] = 'traefik.docker.lbswarm=true';
         $labels[] = 'traefik.enable=true';
-        $labels[] = Http::rule("{$namespace}-{$serviceName}", $service->proxy->rule);
+
+        $rule = "Host(`{$service->proxy->host}`)";
+        if (null !== $service->proxy->rule) {
+            $rule = str_replace('{$host}', $service->proxy->host, $service->proxy->rule);
+        }
+
+        $labels[] = Http::rule("{$namespace}-{$serviceName}", $rule);
         /** @var ProxyPort $port */
         foreach ($service->proxy->ports as $port) {
             $labels[] = Http::port("{$namespace}-{$serviceName}", $port->getPort());
@@ -230,5 +241,10 @@ final class DeployCommand extends Command
                 Param::DOCKER_SERVICE_LIMIT_MEMORY->value => $service->option->limitMemory,
             ],
         );
+    }
+
+    public function setupTls(string $namespace, Service $service, Server $server): void
+    {
+        $server->generateTLSCertificate($namespace, $service->proxy->host);
     }
 }

@@ -11,7 +11,7 @@ use App\Component\Server\TaskInterface;
 /**
  * @implements TaskInterface<null>
  */
-final class DockerServiceUpdate implements TaskInterface
+final class DockerServiceUpdateImage implements TaskInterface
 {
     public static function exec(array $args = []): array
     {

@@ -12,8 +12,9 @@ final readonly class Proxy
      * @param Collection<int, ProxyPort> $ports
      */
     public function __construct(
-        public string $rule,
+        public string $host,
         public Collection $ports,
+        public ?string $rule,
     ) {}
 
     /**
@@ -22,6 +23,7 @@ final readonly class Proxy
     public function toArray(): array
     {
         return [
+            'host' => $this->host,
             'rule' => $this->rule,
             'ports' => $this->ports->map(function (ProxyPort $port): string {
                 return $port->port;

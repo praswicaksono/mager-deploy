@@ -44,6 +44,8 @@ final class DockerServiceCreate implements TaskInterface
         $limitCpu = Helper::getArg(Param::DOCKER_SERVICE_LIMIT_CPU->value, $args, required: false) ?? null;
         /** @var ?string $limitMemory */
         $limitMemory = Helper::getArg(Param::DOCKER_SERVICE_LIMIT_MEMORY->value, $args, required: false) ?? null;
+        /** @var ?string $workDir */
+        $workDir = Helper::getArg(Param::DOCKER_SERVICE_WORKDIR->value, $args, required: false) ?? null;
 
         $cmd = ['docker', 'service', 'create'];
 
@@ -75,6 +77,10 @@ final class DockerServiceCreate implements TaskInterface
 
         if (null !== $limitMemory) {
             $cmd[] = "--limit-memory {$limitMemory}";
+        }
+
+        if (null !== $workDir) {
+            $cmd[] = "--workdir {$workDir}";
         }
 
         $cmd[] = $image;

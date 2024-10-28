@@ -9,11 +9,15 @@ use App\Component\Server\ExecutorInterface;
 use App\Component\Server\FailedCommandException;
 use App\Component\Server\Result;
 use App\Component\Server\Task\DockerNodeList;
+use App\Component\Server\Task\DockerServiceCreate;
 use App\Component\Server\Task\DockerServiceList;
 use App\Component\Server\Task\Param;
 use App\Component\Server\TaskInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Console\Style\SymfonyStyle;
+
+use function Amp\File\createDirectory;
+use function Amp\File\isDirectory;
 
 final class Server
 {
@@ -56,7 +60,7 @@ final class Server
     public function isDockerSwarmEnabled(): bool
     {
         try {
-            $this->executor->run($this->io, DockerNodeList::class);
+            $this->exec(DockerNodeList::class);
         } catch (FailedCommandException $e) {
             return false;
         }
@@ -72,7 +76,7 @@ final class Server
     public function isServiceRunning(string $containerName): bool
     {
         /** @var Result<ArrayCollection<int, DockerService>> $res */
-        $res = $this->executor->run($this->io, DockerServiceList::class, [
+        $res = $this->exec(DockerServiceList::class, [
             Param::DOCKER_SERVICE_LIST_FILTER->value => [
                 "name={$containerName}",
                 'mode=replicated',
@@ -86,14 +90,26 @@ final class Server
         return true;
     }
 
-    /**
-     * @return string[]
-     */
-    public function getAppNameAndCwd(): array
+    public function generateTLSCertificate(string $namespace, string $domain): void
     {
-        $cwd = getcwd();
-        $cwdArr = explode('/', $cwd);
+        $path = getenv('HOME') . '/.mager/certs';
+        if (!isDirectory($path)) {
+            createDirectory($path, 0755);
+        }
 
-        return [end($cwdArr), $cwd];
+        $this->exec(DockerServiceCreate::class, [
+            Param::GLOBAL_NAMESPACE->value => $namespace,
+            Param::DOCKER_SERVICE_NAME->value => 'generate-tls-cert',
+            Param::DOCKER_SERVICE_IMAGE->value => 'alpine/mkcert',
+            Param::DOCKER_SERVICE_MOUNT->value => [
+                "type=bind,source={$path},destination=/root/.local/share/mkcert",
+            ],
+            Param::DOCKER_SERVICE_LABEL->value => ['traefik.enable=false'],
+            Param::DOCKER_SERVICE_MODE->value => 'replicated-job',
+            Param::DOCKER_SERVICE_COMMAND->value => $domain,
+            Param::DOCKER_SERVICE_WORKDIR->value => '/root/.local/share/mkcert',
+        ]);
     }
+
+    public function registerTLSCertificate(string $namespace, string $domain): void {}
 }

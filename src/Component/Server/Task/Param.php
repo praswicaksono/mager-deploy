@@ -42,6 +42,7 @@ enum Param: string
     case DOCKER_SERVICE_HEALTH_RETRIES = 'docker.service.health_retries';
     case DOCKER_SERVICE_ENV_FILE = 'docker.service.env_file';
     case DOCKER_SERVICE_LIMIT_MEMORY = 'docker.service.limit_memory';
+    case DOCKER_SERVICE_WORKDIR = 'docker.service.workdir';
     case DOCKER_IMAGE_NAME = 'docker.image.name';
     case DOCKER_INSPECT_ID = 'docker.inspect.id';
     case DOCKER_INSPECT_FILTER = 'docker.inspect.filter';

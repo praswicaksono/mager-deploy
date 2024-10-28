@@ -132,7 +132,7 @@ final class PrepareCommand extends Command
             '--entrypoints.web.http.redirections.entrypoint.to=websecure',
             '--entryPoints.web.http.redirections.entrypoint.scheme=https',
             '--entrypoints.websecure.address=:443',
-            '--entryPoints.websecure.http3'
+            '--entryPoints.websecure.http3',
         ];
 
         $letsEncryptResolver = [
@@ -154,8 +154,9 @@ final class PrepareCommand extends Command
             '--experimental.plugins.traefik-plugin-waeb.version=v1.0.1',
         ];
 
+        $staticConfig = array_merge($staticConfig, $httpsEntryPoint);
         if (!$isLocal) {
-            $staticConfig = array_merge($staticConfig, $httpsEntryPoint, $letsEncryptResolver);
+            $staticConfig = array_merge($staticConfig, $letsEncryptResolver);
         }
 
         // Prepare traefik dynamic config for dashboard and proxy auto configuration
