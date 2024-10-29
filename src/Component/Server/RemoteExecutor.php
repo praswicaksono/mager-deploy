@@ -14,8 +14,13 @@ final readonly class RemoteExecutor implements ExecutorInterface
     public function run(SymfonyStyle $io, string $task, array $args = [], bool $showOutput = true): Result
     {
         $command = implode(PHP_EOL, $task::exec($args));
-
-        $process = $this->conn->executeAsync($command);
+        if (str_starts_with($command, 'upload')) {
+            [,$srcDest] = explode(';', $command);
+            [$src, $dest] = explode(':', $srcDest);
+            $process = $this->conn->upload($src, $dest);
+        } else {
+            $process = $this->conn->executeAsync($command);
+        }
 
         [$outBuffer, $errBuffer] = Helper::handleProcessOutput($this->serverName, $io, $process, $showOutput);
 

@@ -7,7 +7,6 @@ namespace App\Component\Server;
 use App\Component\Config\Config;
 use App\Component\Config\Data\Server;
 use Spatie\Ssh\Ssh;
-use Symfony\Component\Process\Process;
 
 final readonly class ExecutorFactory
 {
@@ -25,7 +24,7 @@ final readonly class ExecutorFactory
         $serverName = "{$namespace}-{$target->ip}";
         $executor = new LocalExecutor($serverName);
 
-        if (! $this->config->isLocal()) {
+        if (! $this->config->isLocal($namespace)) {
             $ssh = Ssh::create(
                 $target->user,
                 $target->ip,
@@ -34,9 +33,7 @@ final readonly class ExecutorFactory
                 ->usePrivateKey($target->keyPath)
                 ->disableStrictHostKeyChecking()
                 ->disablePasswordAuthentication()
-                ->configureProcess(function (Process $process) {
-                    $process->setTty(true);
-                })
+                ->useMultiplexing("/tmp/{$target->user}-{$namespace}-%C")
                 ->setTimeout(60 * 30);
             $executor = new RemoteExecutor($serverName, $ssh);
         }

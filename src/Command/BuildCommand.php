@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Component\Config\Config;
-use App\Component\Server\ExecutorFactory;
+use App\Component\Server\LocalExecutor;
 use App\Component\Server\Task\DockerImageBuild;
+use App\Component\Server\Task\DockerImageSave;
 use App\Component\Server\Task\Param;
 use App\Helper\Server;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -83,7 +84,7 @@ final class BuildCommand extends Command
         Assert::notEmpty($name, '--name must be a non-empty string');
         Assert::true($this->config->isNotEmpty(), "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
 
-        $executor = (new ExecutorFactory($this->config))($namespace);
+        $executor = new LocalExecutor('localhost');
         $server = Server::withExecutor($executor, $io);
 
         if (! exists($dockerfile)) {
@@ -95,12 +96,22 @@ final class BuildCommand extends Command
         $imageName = "{$namespace}-{$name}:{$version}";
 
         $io->title('Building Image');
-        $io->info("Building image {$imageName}");
         $server->exec(
             DockerImageBuild::class,
             [
                 Param::DOCKER_IMAGE_TAG->value => $imageName,
                 Param::DOCKER_IMAGE_TARGET->value => $target,
+                Param::GLOBAL_PROGRESS_NAME->value => "Building image {$imageName}",
+            ],
+        );
+
+        $server->exec(
+            DockerImageSave::class,
+            [
+                Param::GLOBAL_NAMESPACE->value => $namespace,
+                Param::DOCKER_IMAGE_TAG->value => $imageName,
+                Param::DOCKER_IMAGE_NAME->value => $name,
+                Param::GLOBAL_PROGRESS_NAME->value => "Saving image {$imageName} to {$namespace}-{$name}.tar.gz",
             ],
         );
 

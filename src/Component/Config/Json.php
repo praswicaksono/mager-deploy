@@ -75,9 +75,15 @@ final class Json implements Config
         write($this->path, json_encode($this->config->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
-    public function isLocal(): bool
+    public function isLocal(string $namespace): bool
     {
-        return null !== $this->get(Config::LOCAL_NAMESPACE);
+        $isLocal = $this->get("{$namespace}.is_local") ?? null;
+
+        if (null === $isLocal) {
+            throw new \InvalidArgumentException("{$namespace} has not initialized. Please run mager init");
+        }
+
+        return $isLocal;
     }
 
     public function isNotEmpty(): bool

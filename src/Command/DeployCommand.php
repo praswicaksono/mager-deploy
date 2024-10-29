@@ -12,9 +12,11 @@ use App\Component\Config\ServiceDefinition;
 use App\Component\Server\ExecutorFactory;
 use App\Component\Server\Helper\Traefik\Http;
 use App\Component\Server\Task\DockerCleanupJob;
+use App\Component\Server\Task\DockerImageLoad;
 use App\Component\Server\Task\DockerServiceCreate;
 use App\Component\Server\Task\DockerServiceUpdateImage;
 use App\Component\Server\Task\Param;
+use App\Component\Server\Task\UploadDockerImage;
 use App\Helper\Server;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -78,6 +80,9 @@ final class DeployCommand extends Command
 
         $this->getApplication()->doRun($build, $output);
 
+        $io->title('Transfer and Load Image');
+        $this->transferAndLoadImage($namespace, $definition->name, $server);
+
         $io->title('Deploying Service');
         /**
          * @var Service $service
@@ -138,6 +143,29 @@ final class DeployCommand extends Command
         $io->success('Your application has been deployed.');
 
         return Command::SUCCESS;
+    }
+
+    private function transferAndLoadImage(string $namespace, string $imageName, Server $server): void
+    {
+        if (!$this->config->isLocal($namespace)) {
+            $server->exec(
+                UploadDockerImage::class,
+                [
+                    Param::GLOBAL_NAMESPACE->value => $namespace,
+                    Param::DOCKER_IMAGE_NAME->value => $imageName,
+                    Param::GLOBAL_PROGRESS_NAME->value => "Uploading {$imageName} image",
+                ],
+            );
+        }
+
+        $server->exec(
+            DockerImageLoad::class,
+            [
+                Param::GLOBAL_NAMESPACE->value => $namespace,
+                Param::DOCKER_IMAGE_NAME->value => $imageName,
+                Param::GLOBAL_PROGRESS_NAME->value => "Loading {$imageName} image",
+            ],
+        );
     }
 
     private function runJob(
@@ -250,7 +278,7 @@ final class DeployCommand extends Command
         );
     }
 
-    public function setupTls(string $namespace, Service $service, Server $server): void
+    private function setupTls(string $namespace, Service $service, Server $server): void
     {
         $server->generateTLSCertificate($namespace, $service->proxy->host);
     }

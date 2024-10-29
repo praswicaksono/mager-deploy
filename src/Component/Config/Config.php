@@ -23,7 +23,7 @@ interface Config
 
     public function get(string $key, mixed $default = null): mixed;
 
-    public function isLocal(): bool;
+    public function isLocal(string $namespace): bool;
 
     public function isNotEmpty(): bool;
 
