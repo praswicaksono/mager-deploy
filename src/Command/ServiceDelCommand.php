@@ -49,7 +49,8 @@ final class ServiceDelCommand extends Command
         $fullServiceName = "{$namespace}-{$name}";
         if (! $server->isServiceRunning($fullServiceName)) {
             $io->error("Service {$fullServiceName} is not running");
-            return COMMAND::FAILURE;
+
+            return Command::FAILURE;
         }
 
         $server->exec(

@@ -131,7 +131,7 @@ final class DeployCommand extends Command
                 );
             }
 
-            $io->info("Cleanup container job");
+            $io->info('Cleanup container job');
             $server->exec(DockerCleanupJob::class, continueOnError: true);
         }
 
@@ -212,7 +212,6 @@ final class DeployCommand extends Command
 
         $labels = [];
 
-        // TODO: enable tls
         $labels[] = 'traefik.docker.lbswarm=true';
         $labels[] = 'traefik.enable=true';
 

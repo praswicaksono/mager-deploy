@@ -78,6 +78,7 @@ final class PrepareCommand extends Command
         $this->prepareProxy($namespace);
 
         $this->io->success('Namespace Was Successfully Prepared');
+
         return Command::SUCCESS;
     }
 

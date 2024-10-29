@@ -94,7 +94,7 @@ final class BuildCommand extends Command
 
         $imageName = "{$namespace}-{$name}:{$version}";
 
-        $io->title("Building Image");
+        $io->title('Building Image');
         $io->info("Building image {$imageName}");
         $server->exec(
             DockerImageBuild::class,

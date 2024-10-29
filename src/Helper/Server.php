@@ -92,7 +92,7 @@ final class Server
                 "name={$containerName}",
                 'mode=replicated',
             ],
-            Param::GLOBAL_PROGRESS_NAME->value => "Check if {$containerName} is running}"
+            Param::GLOBAL_PROGRESS_NAME->value => "Check if {$containerName} is running}",
         ]);
 
         if ($res->data->isEmpty()) {
