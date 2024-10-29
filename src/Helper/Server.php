@@ -45,7 +45,7 @@ final class Server
      *
      * @throws FailedCommandException
      */
-    public function exec(string $task, array $args = [], bool $continueOnError = false, bool $showOutput = true): ?Result
+    public function exec(string $task, array $args = [], bool $continueOnError = false, bool $showOutput = false): ?Result
     {
         try {
             return $this->executor->run($this->io, $task, $args, $showOutput);
@@ -61,7 +61,7 @@ final class Server
     public function isDockerSwarmEnabled(): bool
     {
         try {
-            $this->exec(DockerNodeList::class, showOutput: false);
+            $this->exec(DockerNodeList::class, [Param::GLOBAL_PROGRESS_NAME->value => 'Checking if docker swarming is enabled.']);
         } catch (FailedCommandException $e) {
             return false;
         }
@@ -92,7 +92,8 @@ final class Server
                 "name={$containerName}",
                 'mode=replicated',
             ],
-        ], showOutput: false);
+            Param::GLOBAL_PROGRESS_NAME->value => "Check if {$containerName} is running}"
+        ]);
 
         if ($res->data->isEmpty()) {
             return false;

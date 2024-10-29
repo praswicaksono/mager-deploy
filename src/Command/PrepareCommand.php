@@ -68,15 +68,22 @@ final class PrepareCommand extends Command
         $this->server = Server::withExecutor($executor, $this->io);
 
         // TODO: prepare specific OS task such as setup firewall, install docker, setup user, etc...
+        $this->io->title('Preparing Docker Swarm');
         $this->prepareDockerSwarm($serverConfig);
+
+        $this->io->title('Preparing Docker Swarm Network');
         $this->prepareNetwork($namespace);
+
+        $this->io->title('Installing Proxy');
         $this->prepareProxy($namespace);
 
+        $this->io->success('Namespace Was Successfully Prepared');
         return Command::SUCCESS;
     }
 
     private function prepareDockerSwarm(ServerConfig $serverConfig): void
     {
+        $this->io->info('Init docker swarm');
         if (!$this->server->isDockerSwarmEnabled()) {
             $this->server->exec(
                 DockerSwarmInit::class,
@@ -89,6 +96,7 @@ final class PrepareCommand extends Command
 
     private function prepareNetwork(string $namespace): void
     {
+        $this->io->info('Creating namespace scoped network');
         $this->server->exec(
             DockerNetworkCreate::class,
             [
@@ -99,6 +107,7 @@ final class PrepareCommand extends Command
             continueOnError: true,
         );
 
+        $this->io->info('Creating global scoped network');
         $this->server->exec(
             DockerNetworkCreate::class,
             [
@@ -113,6 +122,7 @@ final class PrepareCommand extends Command
     {
         $isLocal = 'local' === $namespace;
 
+        $this->io->info('Checking if traefik is running');
         if ($this->server->isProxyRunning($namespace)) {
             $this->io->warning("Traefik proxy already running for {$namespace} namespace");
 
@@ -163,13 +173,17 @@ final class PrepareCommand extends Command
         ];
 
         if ($isLocal) {
+            $this->io->info('Generate local TLS certificates with mkcerts');
             $this->server->generateTLSCertificate($namespace, $proxyDomain);
             $this->server->registerTLSCertificate($proxyDomain);
+
+            $this->io->info('Cleanup container jobs');
             $this->server->exec(DockerCleanupJob::class);
         }
 
         $home = getenv('HOME');
 
+        $this->io->info('Installing traefik proxy');
         $this->server->exec(
             DockerServiceCreate::class,
             [

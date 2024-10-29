@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Component\Config\Config;
@@ -18,7 +20,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'service:del',
     description: 'Delete and stop running service',
 )]
-class ServiceDelCommand extends Command
+final class ServiceDelCommand extends Command
 {
     public function __construct(
         private readonly Config $config,
@@ -43,6 +45,7 @@ class ServiceDelCommand extends Command
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor, $io);
 
+        $io->title('Deleting Service');
         $fullServiceName = "{$namespace}-{$name}";
         if (! $server->isServiceRunning($fullServiceName)) {
             $io->error("Service {$fullServiceName} is not running");
@@ -51,8 +54,10 @@ class ServiceDelCommand extends Command
 
         $server->exec(
             DockerServiceRemoveByServiceName::class,
-            [Param::DOCKER_SERVICE_NAME->value => "{$namespace}-{$name}"],
-            showOutput: false,
+            [
+                Param::DOCKER_SERVICE_NAME->value => $fullServiceName,
+                Param::GLOBAL_PROGRESS_NAME->name => "Stopping and removing $fullServiceName",
+            ],
         );
 
         $io->success('Your service has been deleted.');

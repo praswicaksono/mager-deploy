@@ -6,6 +6,7 @@ namespace App\Component\Server;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Process\Process;
 use Webmozart\Assert\Assert;
@@ -73,12 +74,21 @@ final class Helper
     /**
      * @return array<int, string>
      */
-    public static function handleProcessOutput(string $prefix, SymfonyStyle $io, Process $process, bool $showOutput = true): array
+    public static function handleProcessOutput(string $prefix, SymfonyStyle $io, Process $process, bool $showOutput = true, ?string $progressName = null): array
     {
         $out = fopen('php://memory', 'r+');
         $err = fopen('php://memory', 'r+');
 
-        $process->wait(function (string $type, string $buffer) use ($out, $err, $io, $process, $prefix, $showOutput) {
+        $progress = new ProgressIndicator($io, 'verbose');
+        if (null !== $progressName) {
+            $progress->start($progressName);
+        } else {
+            $progress->start('Progressing...');
+        }
+
+        $process->wait(function (string $type, string $buffer) use ($out, $err, $io, $process, $prefix, $showOutput, $progress) {
+            $progress->advance();
+
             if ($showOutput) {
                 $io->block($buffer, prefix: "<info>{$prefix}   |   </info>");
             }
@@ -99,6 +109,8 @@ final class Helper
 
         fclose($out);
         fclose($err);
+
+        $progress->finish('Finished');
 
         return [$outBuffer, $errBuffer];
     }

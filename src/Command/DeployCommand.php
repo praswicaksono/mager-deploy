@@ -58,6 +58,7 @@ final class DeployCommand extends Command
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor, $io);
 
+        $io->title('Checking Requirement');
         $server->ensureServerArePrepared($namespace);
 
         $version = getenv('APP_VERSION');
@@ -77,6 +78,7 @@ final class DeployCommand extends Command
 
         $this->getApplication()->doRun($build, $output);
 
+        $io->title('Deploying Service');
         /**
          * @var Service $service
          */
@@ -84,9 +86,10 @@ final class DeployCommand extends Command
             if ($this->config->get("{$namespace}.is_local")) {
                 $io->info("Generate TLS Certificate for {$service->proxy->host}");
                 $this->setupTls($namespace, $service, $server);
+                $server->registerTLSCertificate($service->proxy->host);
             }
 
-            $io->info("Executing Before Deploy Hooks {$service->name} ...");
+            $io->info("Executing Before Deploy Hooks {$service->name}");
             foreach ($service->beforeDeploy as $job) {
                 $this->runJob(
                     job: $job,
@@ -98,7 +101,7 @@ final class DeployCommand extends Command
                 );
             }
 
-            $io->info("Deploying {$service->name} ...");
+            $io->info("Deploying {$service->name}");
             if ($server->isServiceRunning("{$namespace}-{$service->name}")) {
                 $this->updateService(
                     namespace: $namespace,
@@ -116,11 +119,7 @@ final class DeployCommand extends Command
                 );
             }
 
-            if ($this->config->get("{$namespace}.is_local")) {
-                $server->registerTLSCertificate($service->proxy->host);
-            }
-
-            $io->info("Executing After Deploy Hooks {$service->name} ...");
+            $io->info("Executing After Deploy Hooks {$service->name}");
             foreach ($service->afterDeploy as $job) {
                 $this->runJob(
                     job: $job,
@@ -132,9 +131,8 @@ final class DeployCommand extends Command
                 );
             }
 
-            if (! empty($service->afterDeploy) || ! empty($service->beforeDeploy)) {
-                $server->exec(DockerCleanupJob::class);
-            }
+            $io->info("Cleanup container job");
+            $server->exec(DockerCleanupJob::class, continueOnError: true);
         }
 
         $io->success('Your application has been deployed.');
@@ -173,6 +171,7 @@ final class DeployCommand extends Command
                 Param::DOCKER_SERVICE_CONSTRAINTS->value => $constraint,
                 Param::DOCKER_SERVICE_NETWORK->value => $network,
                 Param::DOCKER_SERVICE_ENV->value => $service->env,
+                Param::GLOBAL_PROGRESS_NAME->value => "Executing {$job}",
             ],
         );
     }

@@ -5,6 +5,7 @@ namespace App\Component\Server\Task;
 enum Param: string
 {
     case GLOBAL_NAMESPACE = 'global.namespace';
+    case GLOBAL_PROGRESS_NAME = 'global.progress.namespace';
     case DOCKER_SWARM_MANAGER_IP = 'docker.swarm.manager_ip';
     case DOCKER_SWARM_TOKEN = 'docker.swarm.token';
     case DOCKER_SWARM_TOKEN_TYPE = 'docker.swarm.token_type';

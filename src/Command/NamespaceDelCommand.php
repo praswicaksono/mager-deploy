@@ -47,6 +47,8 @@ final class NamespaceDelCommand extends Command
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor, $io);
 
+        $io->title("Removing namespace {$namespace} and associated services");
+
         if ($server->isDockerSwarmEnabled()) {
             $server->exec(
                 DockerServiceRemoveByNamespace::class,
@@ -54,7 +56,6 @@ final class NamespaceDelCommand extends Command
                     Param::GLOBAL_NAMESPACE->value => $namespace,
                 ],
                 continueOnError: true,
-                showOutput: false,
             );
         }
 

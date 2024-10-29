@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Component\Server;
 
+use App\Component\Server\Task\Param;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Process\Process;
 
@@ -19,7 +20,8 @@ final readonly class LocalExecutor implements ExecutorInterface
         $process->setTimeout(60 * 30);
         $process->start();
 
-        [$outBuffer, $errBuffer] = Helper::handleProcessOutput($this->serverName, $io, $process, $showOutput);
+        $progressName = Helper::getArg(Param::GLOBAL_PROGRESS_NAME->value, $args, required: false) ?? null;
+        [$outBuffer, $errBuffer] = Helper::handleProcessOutput($this->serverName, $io, $process, $showOutput, $progressName);
 
         return new Result((new $task())->result($process->getExitCode(), $outBuffer, $errBuffer));
     }
