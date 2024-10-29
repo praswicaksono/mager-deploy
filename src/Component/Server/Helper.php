@@ -100,6 +100,6 @@ final class Helper
         fclose($out);
         fclose($err);
 
-        return ['', ''];
+        return [$outBuffer, $errBuffer];
     }
 }

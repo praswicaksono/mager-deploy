@@ -43,6 +43,12 @@ class ServiceDelCommand extends Command
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor, $io);
 
+        $fullServiceName = "{$namespace}-{$name}";
+        if (! $server->isServiceRunning($fullServiceName)) {
+            $io->error("Service {$fullServiceName} is not running");
+            return COMMAND::FAILURE;
+        }
+
         $server->exec(
             DockerServiceRemoveByServiceName::class,
             [Param::DOCKER_SERVICE_NAME->value => "{$namespace}-{$name}"],

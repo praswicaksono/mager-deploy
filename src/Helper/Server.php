@@ -61,7 +61,7 @@ final class Server
     public function isDockerSwarmEnabled(): bool
     {
         try {
-            $this->exec(DockerNodeList::class);
+            $this->exec(DockerNodeList::class, showOutput: false);
         } catch (FailedCommandException $e) {
             return false;
         }
@@ -74,15 +74,25 @@ final class Server
         return $this->isServiceRunning("{$namespace}-mager_proxy");
     }
 
+    public function ensureServerArePrepared(string $namespace): void
+    {
+        if ($this->isProxyRunning($namespace) && $this->isDockerSwarmEnabled()) {
+            return;
+        }
+
+        throw new FailedCommandException("Server are not prepared yet. please run mager prepare {$namespace}");
+    }
+
     public function isServiceRunning(string $containerName): bool
     {
+        /** TODO: make mode dynamic */
         /** @var Result<ArrayCollection<int, DockerService>> $res */
         $res = $this->exec(DockerServiceList::class, [
             Param::DOCKER_SERVICE_LIST_FILTER->value => [
                 "name={$containerName}",
                 'mode=replicated',
             ],
-        ]);
+        ], showOutput: false);
 
         if ($res->data->isEmpty()) {
             return false;

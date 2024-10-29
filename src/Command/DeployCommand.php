@@ -58,6 +58,8 @@ final class DeployCommand extends Command
         $executor = (new ExecutorFactory($this->config))($namespace);
         $server = Server::withExecutor($executor, $io);
 
+        $server->ensureServerArePrepared($namespace);
+
         $version = getenv('APP_VERSION');
         $version = false === $version ? 'latest' : $version;
 
