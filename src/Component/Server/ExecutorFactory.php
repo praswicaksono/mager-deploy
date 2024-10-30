@@ -15,7 +15,7 @@ final readonly class ExecutorFactory
     public function __invoke(string $namespace, string $role = 'manager'): ExecutorInterface
     {
         // TODO: Support multiple server in future
-        $servers = $this->config->getServers();
+        $servers = $this->config->getServers($namespace);
         /** @var Server $target */
         $target = $servers->filter(function (Server $server) use ($role): bool {
             return $server->role === $role;

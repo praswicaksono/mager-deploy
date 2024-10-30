@@ -28,6 +28,11 @@ final class Http
         return "traefik.http.routers.{$name}.tls=true";
     }
 
+    public static function certResolver(string $name): string
+    {
+        return "traefik.http.routers.{$name}.tls.certresolver=mager";
+    }
+
     public static function middleware(string $name, string $middleware): string
     {
         return "traefik.http.routers.{$name}.middlewares={$middleware}";

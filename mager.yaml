@@ -5,7 +5,7 @@ services:
       ports:
         - 80/tcp
       rule: Host(`{$host}`)
-      host: nginx.wip
+      host: nginx.praswicaksono.pw
     after_deploy:
       - echo 'true'
     before_deploy:

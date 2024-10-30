@@ -84,11 +84,12 @@ final class DeployCommand extends Command
         $this->transferAndLoadImage($namespace, $definition->name, $server);
 
         $io->title('Deploying Service');
+        $isLocal = $this->config->get("{$namespace}.is_local");
         /**
          * @var Service $service
          */
         foreach ($definition->services as $service) {
-            if ($this->config->get("{$namespace}.is_local")) {
+            if ($isLocal) {
                 $io->info("Generate TLS Certificate for {$service->proxy->host}");
                 $this->setupTls($namespace, $service, $server);
                 $server->registerTLSCertificate($service->proxy->host);
@@ -121,6 +122,7 @@ final class DeployCommand extends Command
                     serviceName: $service->name,
                     service: $service,
                     server: $server,
+                    isLocal: $isLocal
                 );
             }
 
@@ -226,6 +228,7 @@ final class DeployCommand extends Command
         string $serviceName,
         Service $service,
         Server $server,
+        bool $isLocal,
     ): void {
 
         $constraint = ['node.role==worker'];
@@ -255,6 +258,10 @@ final class DeployCommand extends Command
         /** @var ProxyPort $port */
         foreach ($service->proxy->ports as $port) {
             $labels[] = Http::port($fullServiceName, $port->getPort());
+        }
+
+        if (!$isLocal) {
+            $labels[] = Http::certResolver($fullServiceName);
         }
 
         $server->exec(

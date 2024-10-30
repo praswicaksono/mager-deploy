@@ -8,6 +8,7 @@ use App\Component\Config\Config;
 use App\Helper\Encryption;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -40,18 +41,15 @@ final class InitCommand extends Command
             'Setup for mager for local development include proxy auto configuration',
         );
 
-        $this->addOption(
-            'namespace',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            'Create namespace for the project',
-        );
+        $this
+            ->addArgument('namespace', InputArgument::OPTIONAL, 'Namespace name')
+        ;
     }
 
     private function initializeConfig(): void
     {
         $isLocal = $this->input->getOption('local') ?? false;
-        $namespace = $this->input->getOption('namespace') ?? null;
+        $namespace = $this->input->getArgument('namespace') ?? null;
         $globalNetwork = Config::MAGER_GLOBAL_NETWORK;
 
         if (!$isLocal) {

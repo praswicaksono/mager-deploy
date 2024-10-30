@@ -173,6 +173,10 @@ final class PrepareCommand extends Command
             "traefik.http.middlewares.dashboardauth.basicauth.users={$this->config->getProxyUser($namespace)}:{$this->config->getProxyPassword($namespace)}",
         ];
 
+        if (!$isLocal) {
+            $dynamicConfig[] = Http::certResolver(self::TRAEFIK_DASHBOARD_NAME);
+        }
+
         if ($isLocal) {
             $this->io->info('Generate local TLS certificates with mkcerts');
             $this->server->generateTLSCertificate($namespace, $proxyDomain);
@@ -184,6 +188,18 @@ final class PrepareCommand extends Command
 
         $home = getenv('HOME');
 
+        $mounts = [
+            "type=volume,source={$namespace}-proxy_letsencrypt,destination=/letsencrypt",
+            'type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock',
+        ];
+
+        $localMounts = [
+            "type=bind,source={$home}/.mager/certs,destination=/var/certs",
+            "type=bind,source={$home}/.mager/dynamic.yaml,destination=/var/traefik/dynamic.yaml",
+        ];
+        if ($isLocal) {
+            $mounts = array_merge($mounts, $localMounts);
+        }
         $this->io->info('Installing traefik proxy');
         $this->server->exec(
             DockerServiceCreate::class,
@@ -195,12 +211,7 @@ final class PrepareCommand extends Command
                 Param::DOCKER_SERVICE_CONSTRAINTS->value => ['node.role==manager'],
                 Param::DOCKER_SERVICE_PORT_PUBLISH->value => ['80:80', '443:443/tcp', '443:443/udp'],
                 Param::DOCKER_SERVICE_LABEL->value => $dynamicConfig,
-                Param::DOCKER_SERVICE_MOUNT->value => [
-                    'type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock',
-                    "type=bind,source={$home}/.mager/certs,destination=/var/certs",
-                    "type=bind,source={$home}/.mager/dynamic.yaml,destination=/var/traefik/dynamic.yaml",
-                    "type=volume,source={$namespace}-proxy_letsencrypt,destination=/letsencrypt",
-                ],
+                Param::DOCKER_SERVICE_MOUNT->value => $mounts,
                 Param::DOCKER_SERVICE_COMMAND->value => implode(' ', $staticConfig),
             ],
         );
