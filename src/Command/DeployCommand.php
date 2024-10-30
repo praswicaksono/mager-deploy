@@ -122,7 +122,7 @@ final class DeployCommand extends Command
                     serviceName: $service->name,
                     service: $service,
                     server: $server,
-                    isLocal: $isLocal
+                    isLocal: $isLocal,
                 );
             }
 
