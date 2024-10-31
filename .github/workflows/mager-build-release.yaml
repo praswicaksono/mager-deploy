@@ -15,33 +15,25 @@ jobs:
       - name: "Download Linux X86_64"
         uses: dawidd6/action-download-artifact@v2
         with:
-          repo: praswicaksono/mager-deploy
-          branch: main
-          workflow: mager-build-release.yaml
+          github_token: ${{ github.token }}
           skip_unpack: true
           name: "mager-linux-x86_64"
       - name: "Download Linux ARM64"
         uses: dawidd6/action-download-artifact@v2
         with:
-          repo: praswicaksono/mager-deploy
-          branch: main
-          workflow: mager-build-release.yaml
+          github_token: ${{ github.token }}
           skip_unpack: true
           name: "mager-linux-aarc64."
       - name: "Download Mac X86_64"
         uses: dawidd6/action-download-artifact@v2
         with:
-          repo: praswicaksono/mager-deploy
-          branch: main
-          workflow: mager-build-release.yaml
+          github_token: ${{ github.token }}
           skip_unpack: true
           name: "mager-macos-x86_64"
       - name: "Download Mac ARM64"
         uses: dawidd6/action-download-artifact@v2
         with:
-          repo: praswicaksono/mager-deploy
-          branch: main
-          workflow: mager-build-release.yaml
+          github_token: ${{ github.token }}
           skip_unpack: true
           name: "mager-macos-aarch64"
       - name: "Create Release"
