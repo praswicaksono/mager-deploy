@@ -12,30 +12,12 @@ jobs:
     needs: build-release-artifacts
     runs-on: "ubuntu-latest"
     steps:
-      - name: "Download Linux X86_64"
-        uses: dawidd6/action-download-artifact@v2
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
         with:
-          github_token: ${{ github.token }}
-          skip_unpack: true
-          name: "mager-linux-x86_64"
-      - name: "Download Linux ARM64"
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          github_token: ${{ github.token }}
-          skip_unpack: true
-          name: "mager-linux-aarc64."
-      - name: "Download Mac X86_64"
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          github_token: ${{ github.token }}
-          skip_unpack: true
-          name: "mager-macos-x86_64"
-      - name: "Download Mac ARM64"
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          github_token: ${{ github.token }}
-          skip_unpack: true
-          name: "mager-macos-aarch64"
+          pattern: mager-*
+          merge-multiple: true
+      - run: ls -R .
       - name: "Create Release"
         uses: actions/create-release@v1
         id: create_release
