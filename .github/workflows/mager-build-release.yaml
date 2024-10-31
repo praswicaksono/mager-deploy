@@ -17,29 +17,33 @@ jobs:
         with:
           repo: praswicaksono/mager-deploy
           branch: main
-          workflow: mager-build-release.yml
-          name: "mager-linux-x86_64.tar.gz"
+          workflow: mager-build-release.yaml
+          skip_unpack: true
+          name: "mager-linux-x86_64"
       - name: "Download Linux ARM64"
         uses: dawidd6/action-download-artifact@v2
         with:
           repo: praswicaksono/mager-deploy
           branch: main
-          workflow: mager-build-release.yml
-          name: "mager-linux-aarc64.tar.gz"
+          workflow: mager-build-release.yaml
+          skip_unpack: true
+          name: "mager-linux-aarc64."
       - name: "Download Mac X86_64"
         uses: dawidd6/action-download-artifact@v2
         with:
           repo: praswicaksono/mager-deploy
           branch: main
-          workflow: mager-build-release.yml
-          name: "mager-macos-x86_64.tar.gz"
+          workflow: mager-build-release.yaml
+          skip_unpack: true
+          name: "mager-macos-x86_64"
       - name: "Download Mac ARM64"
         uses: dawidd6/action-download-artifact@v2
         with:
           repo: praswicaksono/mager-deploy
           branch: main
-          workflow: mager-build-release.yml
-          name: "mager-macos-aarch64.tar.gz"
+          workflow: mager-build-release.yaml
+          skip_unpack: true
+          name: "mager-macos-aarch64"
       - name: "Create Release"
         uses: actions/create-release@v1
         id: create_release
@@ -56,36 +60,36 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./mager-linux-x86_64.tar.gz
-          asset_name: mager-linux-x86_64.tar.gz
-          asset_content_type: application/gzip
+          asset_path: ./mager-linux-x86_64.zip
+          asset_name: mager-linux-x86_64.zip
+          asset_content_type: application/zip
       - name: "Upload Linux ARM64 Binary"
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./mager-linux-aarch64.tar.gz
-          asset_name: mager-linux-aarch64.tar.gz
-          asset_content_type: application/gzip
+          asset_path: ./mager-linux-aarch64.zip
+          asset_name: mager-linux-aarch64.zip
+          asset_content_type: application/zip
       - name: "Upload MacOS ARM64 Binary"
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./mager-macos-aarch64.tar.gz
-          asset_name: mager-macos-aarch64.tar.gz
-          asset_content_type: application/gzip
+          asset_path: ./mager-macos-aarch64.zip
+          asset_name: mager-macos-aarch64.zip
+          asset_content_type: application/zip
       - name: "Upload MacOS X86_64 Binary"
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./mager-macos-x86_64.tar.gz
-          asset_name: mager-macos-x86_64.tar.gz
-          asset_content_type: application/gzip
+          asset_path: ./mager-macos-x86_64.zip
+          asset_name: mager-macos-x86_64.zip
+          asset_content_type: application/zip
   build-release-artifacts:
     name: "Build ${{ matrix.php-version }} with ${{ matrix.arch }} on ${{ matrix.runner }}"
     runs-on: ${{ matrix.runner }}
@@ -139,12 +143,12 @@ jobs:
       - name: "Bundle release"
         run: |
           mkdir release
-          cat downloads/micro.sfx build/mager.phar > release/mager-${{ matrix.arch }} && chmod +x release/mager-${{ matrix.arch }} && tar -czvf release/mager-${{ matrix.arch }}.tar.gz release/mager-${{ matrix.arch }} --remove-files
+          cat downloads/micro.sfx build/mager.phar > release/mager-${{ matrix.arch }} && chmod +x release/mager-${{ matrix.arch }}
 
       - name: "Upload Artifact"
         uses: actions/upload-artifact@v4
         with:
-          name: mager-${{ matrix.arch }}.tar.gz
+          name: mager-${{ matrix.arch }}
           path: |
-            release/mager-${{ matrix.arch }}.tar.gz
+            release/mager-${{ matrix.arch }}
           if-no-files-found: error
