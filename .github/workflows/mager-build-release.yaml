@@ -3,8 +3,7 @@ name: Build & Release Mager Binary
 on:
   push:
     tags:
-      - '*'
-  workflow_dispatch:
+      - "v*.*.*"
 
 jobs:
   create-release:
@@ -23,11 +22,10 @@ jobs:
           tar -czvf mager-linux-aarch64.tar.gz mager-linux-aarch64
           tar -czvf mager-macos-x86_64.tar.gz mager-macos-x86_64
           tar -czvf mager-macos-aarch64.tar.gz mager-macos-aarch64
-      - run: ls -la
       - name: "Create Release"
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          generate_release_notes: true
           files: |
             mager-linux-x86_64.tar.gz
             mager-linux-aarch64.tar.gz
