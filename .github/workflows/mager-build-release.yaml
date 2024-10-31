@@ -17,15 +17,22 @@ jobs:
         with:
           pattern: mager-*
           merge-multiple: true
+      - name: Compress All Artifact
+        run: |
+          tar -czvf mager-linux-x86_64.tar.gz mager-linux-x86_64
+          tar -czvf mager-linux-aarch64.tar.gz mager-linux-aarch64
+          tar -czvf mager-macos-x86_64.tar.gz mager-macos-x86_64
+          tar -czvf mager-macos-aarch64.tar.gz mager-macos-aarch64
+      - run: ls -la
       - name: "Create Release"
         uses: softprops/action-gh-release@v2
         with:
           draft: true
           files: |
-            mager-linux-x86_64
-            mager-linux-aarch64
-            mager-macos-x86_64
-            mager-macos-aarch64
+            mager-linux-x86_64.tar.gz
+            mager-linux-aarch64.tar.gz
+            mager-macos-x86_64.tar.gz
+            mager-macos-aarch64.tar.gz
   build-release-artifacts:
     name: "Build ${{ matrix.php-version }} with ${{ matrix.arch }} on ${{ matrix.runner }}"
     runs-on: ${{ matrix.runner }}
@@ -67,7 +74,7 @@ jobs:
       - name: Download Micro With ${{ matrix.php-version }}-${{ matrix.arch }}
         run: |
           mkdir downloads
-          wget https://dl.static-php.dev/static-php-cli/bulk/php-${{ matrix.php-version }}-micro-${{ matrix.arch }}.tar.gz -O downloads/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz
+          wget https://dl.static-php.dev/static-php-cli/common/php-${{ matrix.php-version }}-micro-${{ matrix.arch }}.tar.gz -O downloads/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz
           tar -xvzf downloads/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz --directory downloads
 
       - name: "Install Dependencies"
