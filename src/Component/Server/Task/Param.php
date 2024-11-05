@@ -54,4 +54,6 @@ enum Param: string
     case DOCKER_IMAGE_FILE = 'docker.image.file';
     case DOCKER_VOLUME_NAME = 'docker.volume.name';
     case DOCKER_VOLUME_LIST_FILTER = 'docker.volume.list.filter';
+    case DOCKER_CONFIG_NAME = 'docker.config.name';
+    case DOCKER_CONFIG_FILE_PATH = 'docker.config.file_path';
 }
