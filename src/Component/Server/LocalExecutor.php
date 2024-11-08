@@ -15,7 +15,6 @@ final readonly class LocalExecutor implements ExecutorInterface
     public function run(SymfonyStyle $io, string $task, array $args = [], bool $showOutput = true): Result
     {
         $command = implode(PHP_EOL, $task::exec($args));
-        $io->writeln($command);
 
         $process = Process::fromShellCommandline($command);
         $process->setTimeout(60 * 30);

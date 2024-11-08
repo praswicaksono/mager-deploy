@@ -5,6 +5,7 @@ namespace App\Component\Server\Task;
 enum Param: string
 {
     case GLOBAL_NAMESPACE = 'global.namespace';
+    case APP_URL = 'app.url';
     case GLOBAL_PROGRESS_NAME = 'global.progress.namespace';
     case DOCKER_SWARM_MANAGER_IP = 'docker.swarm.manager_ip';
     case DOCKER_SWARM_TOKEN = 'docker.swarm.token';
@@ -24,6 +25,7 @@ enum Param: string
     case DOCKER_SERVICE_NAME = 'docker.service.name';
     case DOCKER_SERVICE_CONSTRAINTS = 'docker.service.constraints';
     case DOCKER_SERVICE_LABEL = 'docker.service.label';
+    case DOCKER_SERVICE_CONFIG = 'docker.service.config';
     case DOCKER_SERVICE_MODE = 'docker.service.mode';
     case DOCKER_SERVICE_UPDATE_ORDER = 'docker.service.update_order';
     case DOCKER_SERVICE_UPDATE_FAILURE_ACTION = 'docker.service.update_failure_action';

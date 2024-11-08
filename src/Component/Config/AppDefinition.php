@@ -19,6 +19,7 @@ final readonly class AppDefinition implements Definition
     public function __construct(
         public string $name,
         public Build $build,
+        public ?string $cmd = null,
         public ?Proxy $proxy = null,
         public ?Collection $config = null,
         public array $volumes = [],
@@ -66,11 +67,11 @@ final readonly class AppDefinition implements Definition
                     continue;
                 }
 
-                $envs[$name] = $value;
+                $envs[] = "{$name}={$value}";
                 continue;
             }
 
-            $envs[$name] = $value;
+            $envs[] = "{$name}={$value}";
         }
 
         return $envs;

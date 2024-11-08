@@ -15,7 +15,7 @@ final class YamlAppServiceDefinitionBuilder implements DefinitionBuilder
     {
         $definitionArray = Yaml::parseFile($definitionPath);
 
-        $buildConfig = $definitionArray['build'] ?? [];
+        $buildConfig = $definitionArray['mager']['build'] ?? [];
         $build = new Build(
             context: $buildConfig['context'] ?? '.',
             dockerfile: $buildConfig['dockerfile'] ?? 'Dockerfile',
@@ -23,18 +23,19 @@ final class YamlAppServiceDefinitionBuilder implements DefinitionBuilder
             image: $buildConfig['image'] ?? null,
         );
 
-        $config = $definitionArray['config'] ?? [];
-        $configCollection = new ArrayCollection($config);
+        $config = $definitionArray['mager']['config'] ?? [];
+        $configCollection = new ArrayCollection();
         foreach ($config as $item) {
             $configCollection->add(ConfigDefinition::fromString($item));
         }
 
         return new AppDefinition(
-            name: $definitionArray['name'],
+            name: $definitionArray['mager']['name'],
             build: $build,
+            cmd: $definitionArray['mager']['cmd'] ?? null,
             config: $configCollection,
-            volumes: $definitionArray['volumes'] ?? [],
-            env: $definitionArray['env'] ?? [],
+            volumes: $definitionArray['mager']['volumes'] ?? [],
+            env: $definitionArray['mager']['env'] ?? [],
         );
     }
 }

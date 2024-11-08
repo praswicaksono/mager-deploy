@@ -36,6 +36,8 @@ final class DockerServiceCreate implements TaskInterface
         $ports = Helper::getArg(Param::DOCKER_SERVICE_PORT_PUBLISH->value, $args, required: false) ?? [];
         /** @var array|string[] $labels */
         $labels = Helper::getArg(Param::DOCKER_SERVICE_LABEL->value, $args, required: false) ?? [];
+        /** @var array|string[] $configs */
+        $configs = Helper::getArg(Param::DOCKER_SERVICE_CONFIG->value, $args, required: false) ?? [];
         /** @var array|string[] $mounts */
         $mounts = Helper::getArg(Param::DOCKER_SERVICE_MOUNT->value, $args, required: false) ?? [];
         /** @var int $replicas */
@@ -55,6 +57,7 @@ final class DockerServiceCreate implements TaskInterface
         $cmd = Helper::buildOptions('--publish', $ports, $cmd);
         $cmd = Helper::buildOptions('--label', $labels, $cmd);
         $cmd = Helper::buildOptions('--mount', $mounts, $cmd);
+        $cmd = Helper::buildOptions('--config', $configs, $cmd);
 
         $cmd[] = "--name {$namespace}-{$name}";
         $cmd[] = "--replicas {$replicas}";

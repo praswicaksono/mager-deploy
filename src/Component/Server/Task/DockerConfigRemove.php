@@ -8,26 +8,23 @@ use App\Component\Server\FailedCommandException;
 use App\Component\Server\Helper;
 use App\Component\Server\TaskInterface;
 
-use function Amp\File\exists;
-
 /**
  * @implements TaskInterface<null>
  */
-final class DockerConfigCreate implements TaskInterface
+final class DockerConfigRemove implements TaskInterface
 {
     public static function exec(array $args = []): array
     {
-        $namespace = Helper::getArg(Param::GLOBAL_NAMESPACE->value, $args);
-        $configFile = Helper::getArg(Param::DOCKER_CONFIG_FILE_PATH->value, $args);
+        $namespace = Helper::getArg(Param::GLOBAL_NAMESPACE->value, $args, required: false);
+        $configName = Helper::getArg(Param::DOCKER_CONFIG_NAME->value, $args, required: false);
 
-        if (!exists($configFile)) {
-            throw new \InvalidArgumentException('Config file does not exist');
+        $filter = $namespace . '-';
+        if (!empty($configName)) {
+            $filter = $configName;
         }
 
-        $configName = Helper::extractConfigNameFromPath($namespace, $configFile);
-
         return [
-            "cat {$configFile} | docker config create {$configName} -",
+            sprintf('docker config rm `docker config ls --format "{{.ID}}" --filter name=%s`', $filter),
         ];
     }
 

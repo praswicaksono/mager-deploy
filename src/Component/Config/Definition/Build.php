@@ -13,8 +13,12 @@ final readonly class Build
         public ?string $image = null,
     ) {}
 
-    public function resolveImageNameTagFromEnv(): string
+    public function resolveImageNameTagFromEnv(): ?string
     {
+        if (null === $this->image) {
+            return null;
+        }
+
         [$name, $tag] = explode(':', $this->image);
         if (empty($tag)) {
             return $this->image;
