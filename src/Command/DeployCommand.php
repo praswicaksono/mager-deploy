@@ -231,6 +231,9 @@ final class DeployCommand extends Command
         /** @var ProxyPort $port */
         foreach ($service->proxy->ports as $port) {
             $labels[] = HttpHelper::port($fullServiceName, $port->getPort());
+            if (443 === $port->getPort()) {
+                $labels[] = HttpHelper::tlsLoadBalancer($fullServiceName);
+            }
         }
 
         if (!$isLocal) {
@@ -240,7 +243,7 @@ final class DeployCommand extends Command
         yield DockerCreateService::create($namespace, $serviceName, $imageName)
             ->withConstraints($constraint)
             ->withNetworks($network)
-            ->withEnvs($service->env)
+            ->withEnvs($service->resolveEnvValue())
             ->withLabels($labels)
             ->withMounts($service->parseToDockerVolume($namespace))
             ->withCommand(implode(' ', $service->cmd))

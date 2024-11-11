@@ -129,16 +129,14 @@ final class BuildCommand extends Command
         bool $save = false,
         bool $push = false,
     ): \Generator {
-        $outputType = 'docker';
-
-        if ($push) {
-            $outputType = 'registry';
-        }
-
-        $build = "docker buildx build --tag {$imageName} --file {$file} --output {$outputType} --progress plain";
+        $build = "docker buildx build --tag {$imageName} --file {$file} --progress plain";
 
         if (null !== $target) {
             $build .= " --target {$target}";
+        }
+
+        if ($push) {
+            $build .= ' --output registry';
         }
 
         yield $build . ' .';

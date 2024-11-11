@@ -23,6 +23,11 @@ final class HttpHelper
         return "traefik.http.services.{$name}.loadbalancer.server.port={$port}";
     }
 
+    public static function tlsLoadBalancer(string $name): string
+    {
+        return "traefik.http.services.{$name}.loadbalancer.server.scheme=https";
+    }
+
     public static function tls(string $name): string
     {
         return "traefik.http.routers.{$name}.tls=true";
