@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Component\Config\Config;
-use App\Component\Server\ExecutorFactory;
-use App\Component\Server\Task\DockerServiceRemoveByServiceName;
-use App\Component\Server\Task\Param;
-use App\Helper\Server;
+use App\Component\TaskRunner\RunnerBuilder;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -22,6 +19,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 final class ServiceDelCommand extends Command
 {
+    private SymfonyStyle $io;
+
     public function __construct(
         private readonly Config $config,
     ) {
@@ -38,30 +37,33 @@ final class ServiceDelCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
         $namespace = $input->getArgument('namespace');
         $name = $input->getArgument('name');
 
-        $executor = (new ExecutorFactory($this->config))($namespace);
-        $server = Server::withExecutor($executor, $io);
+        $r = RunnerBuilder::create()
+            ->withIO($this->io)
+            ->withConfig($this->config)
+            ->build($namespace);
 
-        $io->title('Deleting Service');
+        return $r->run($this->deleteService($namespace, $name), showProgress: false);
+    }
+
+    private function deleteService(string $namespace, string $name): \Generator
+    {
         $fullServiceName = "{$namespace}-{$name}";
-        if (! $server->isServiceRunning($fullServiceName)) {
-            $io->error("Service {$fullServiceName} is not running");
+
+        $id = yield sprintf('docker service ls --format "{{.ID}}" --filter name=%s', $fullServiceName);
+
+        if (empty($id)) {
+            $this->io->error("Service {$fullServiceName} is not running");
 
             return Command::FAILURE;
         }
 
-        $server->exec(
-            DockerServiceRemoveByServiceName::class,
-            [
-                Param::DOCKER_SERVICE_NAME->value => $fullServiceName,
-                Param::GLOBAL_PROGRESS_NAME->name => "Stopping and removing $fullServiceName",
-            ],
-        );
+        yield sprintf('docker service rm %s', $id);
 
-        $io->success('Your service has been deleted.');
+        $this->io->success('Service has been deleted.');
 
         return Command::SUCCESS;
     }

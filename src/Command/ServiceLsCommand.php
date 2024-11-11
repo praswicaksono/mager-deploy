@@ -5,13 +5,9 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Component\Config\Config;
-use App\Component\Server\Docker\DockerService;
-use App\Component\Server\ExecutorFactory;
-use App\Component\Server\Result;
-use App\Component\Server\Task\DockerServiceList;
-use App\Component\Server\Task\Param;
-use App\Helper\Server;
-use Doctrine\Common\Collections\ArrayCollection;
+use App\Component\TaskRunner\RunnerBuilder;
+use App\Component\TaskRunner\Util;
+use App\Entity\DockerService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -26,6 +22,8 @@ use Webmozart\Assert\Assert;
 )]
 final class ServiceLsCommand extends Command
 {
+    private SymfonyStyle $io;
+
     public function __construct(
         private readonly Config $config,
     ) {
@@ -44,7 +42,7 @@ final class ServiceLsCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
 
         $namespace = $input->getArgument('namespace');
         $config = $this->config->get($namespace);
@@ -52,24 +50,25 @@ final class ServiceLsCommand extends Command
         Assert::notEmpty($namespace, '--namespace must be a non-empty string');
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
 
-        $executor = (new ExecutorFactory($this->config))($namespace);
-        $server = Server::withExecutor($executor, $io);
+        $r = RunnerBuilder::create()
+            ->withIO($this->io)
+            ->withConfig($this->config)
+            ->build($namespace);
 
-        /** @var Result<ArrayCollection<int, DockerService>> $result */
-        $result = $server->exec(
-            DockerServiceList::class,
-            [
-                Param::DOCKER_SERVICE_LIST_FILTER->value => [
-                    "name={$namespace}-",
-                ],
-            ],
-            continueOnError: true,
-            showOutput: false,
-        );
-        /** @var ArrayCollection<int, DockerService> $collection */
-        $collection = $result->data;
+        $r->run($this->listServices($namespace), showProgress: false, throwError: false);
 
-        $table = $io->createTable();
+        return Command::SUCCESS;
+    }
+
+    private function listServices(string $namespace): \Generator
+    {
+        $out = yield sprintf('docker service ls --format "{{json .}}" --filter name=%s', "{$namespace}-");
+
+        $collection = Util::deserializeJsonList($out, function (string $item): DockerService {
+            return DockerService::fromJsonString($item);
+        });
+
+        $table = $this->io->createTable();
         $table->setHeaders(['ID', 'Namespace', 'App', 'Image']);
 
         foreach ($collection as $service) {
@@ -84,7 +83,5 @@ final class ServiceLsCommand extends Command
         }
 
         $table->render();
-
-        return Command::SUCCESS;
     }
 }

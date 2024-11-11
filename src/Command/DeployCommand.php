@@ -9,15 +9,11 @@ use App\Component\Config\Definition\ProxyPort;
 use App\Component\Config\Definition\Service;
 use App\Component\Config\DefinitionBuilder;
 use App\Component\Config\ServiceDefinition;
-use App\Component\Server\ExecutorFactory;
-use App\Component\Server\Helper\Traefik\Http;
-use App\Component\Server\Task\DockerCleanupJob;
-use App\Component\Server\Task\DockerImageLoad;
-use App\Component\Server\Task\DockerServiceCreate;
-use App\Component\Server\Task\DockerServiceUpdateImage;
-use App\Component\Server\Task\Param;
-use App\Component\Server\Task\UploadDockerImage;
-use App\Helper\Server;
+use App\Component\TaskRunner\RunnerBuilder;
+use App\Component\TaskRunner\TaskBuilder\DockerCreateService;
+use App\Helper\CommandHelper;
+use App\Helper\ConfigHelper;
+use App\Helper\HttpHelper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -32,6 +28,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 final class DeployCommand extends Command
 {
+    private SymfonyStyle $io;
+
     public function __construct(
         private readonly Config $config,
         private readonly DefinitionBuilder $definitionBuilder,
@@ -51,17 +49,21 @@ final class DeployCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
 
         $namespace = $input->getArgument('namespace');
         /** @var ServiceDefinition $definition */
         $definition = $this->definitionBuilder->build();
 
-        $executor = (new ExecutorFactory($this->config))($namespace);
-        $server = Server::withExecutor($executor, $io);
+        $r = RunnerBuilder::create()
+            ->withIO($this->io)
+            ->withConfig($this->config)
+            ->build($namespace);
 
-        $io->title('Checking Requirement');
-        $server->ensureServerArePrepared($namespace);
+        $this->io->title('Checking Requirement');
+        if (! $r->run($this->ensureServerArePrepared($namespace))) {
+            return Command::FAILURE;
+        }
 
         $version = getenv('APP_VERSION');
         $version = false === $version ? 'latest' : $version;
@@ -74,100 +76,89 @@ final class DeployCommand extends Command
             '--file' => $definition->build->dockerfile,
             '--name' => $definition->name,
             '--build' => $version,
+            '--save' => null,
         ]);
 
         $imageName = "{$namespace}-{$definition->name}:{$version}";
 
         $this->getApplication()->doRun($build, $output);
 
-        $io->title('Transfer and Load Image');
-        $this->transferAndLoadImage($namespace, $definition->name, $server);
+        $this->io->title('Transfer and Load Image');
+        $r->run($this->transferAndLoadImage($namespace, $definition->name));
 
-        $io->title('Deploying Service');
+        $this->io->title('Deploying Service');
         $isLocal = $this->config->get("{$namespace}.is_local");
         /**
          * @var Service $service
          */
         foreach ($definition->services as $service) {
-            if ($isLocal) {
-                $io->info("Generate TLS Certificate for {$service->proxy->host}");
-                $this->setupTls($namespace, $service, $server);
-                $server->registerTLSCertificate($service->proxy->host);
-            }
-
-            $io->info("Executing Before Deploy Hooks {$service->name}");
+            $this->io->section("Executing Before Deploy Hooks {$service->name}");
             foreach ($service->beforeDeploy as $job) {
-                $this->runJob(
+                $r->run($this->runJob(
                     job: $job,
                     namespace: $namespace,
                     imageName: $imageName,
                     serviceName: $service->name,
                     service: $service,
-                    server: $server,
-                );
+                ));
             }
 
-            $io->info("Deploying {$service->name}");
-            if ($server->isServiceRunning("{$namespace}-{$service->name}")) {
-                $this->updateService(
-                    namespace: $namespace,
-                    imageName: $imageName,
-                    serviceName: $service->name,
-                    server: $server,
-                );
-            } else {
-                $this->createService(
-                    namespace: $namespace,
-                    imageName: $imageName,
-                    serviceName: $service->name,
-                    service: $service,
-                    server: $server,
-                    isLocal: $isLocal,
-                );
+            if ($isLocal) {
+                $r->run($this->setupTls($namespace, $service));
             }
 
-            $io->info("Executing After Deploy Hooks {$service->name}");
+            $this->io->section("Deploying {$service->name}");
+            $r->run($this->deploy(
+                namespace: $namespace,
+                imageName: $imageName,
+                serviceName: $service->name,
+                service: $service,
+                isLocal: $isLocal,
+            ));
+
+            $this->io->section("Executing After Deploy Hooks {$service->name}");
             foreach ($service->afterDeploy as $job) {
-                $this->runJob(
+                $r->run($this->runJob(
                     job: $job,
                     namespace: $namespace,
                     imageName: $imageName,
                     serviceName: $service->name,
                     service: $service,
-                    server: $server,
-                );
+                ));
             }
-
-            $io->info('Cleanup container job');
-            $server->exec(DockerCleanupJob::class, continueOnError: true);
         }
 
-        $io->success('Your application has been deployed.');
+        $this->io->success('Your application has been deployed.');
 
         return Command::SUCCESS;
     }
 
-    private function transferAndLoadImage(string $namespace, string $imageName, Server $server): void
+    private function ensureServerArePrepared(string $namespace): \Generator
     {
-        if (!$this->config->isLocal($namespace)) {
-            $server->exec(
-                UploadDockerImage::class,
-                [
-                    Param::GLOBAL_NAMESPACE->value => $namespace,
-                    Param::DOCKER_IMAGE_NAME->value => $imageName,
-                    Param::GLOBAL_PROGRESS_NAME->value => "Uploading {$imageName} image",
-                ],
-            );
+        $node = yield 'docker node ls';
+        if (empty($node)) {
+            $this->io->error('Docker swarm are not initialized yet');
+
+            return false;
         }
 
-        $server->exec(
-            DockerImageLoad::class,
-            [
-                Param::GLOBAL_NAMESPACE->value => $namespace,
-                Param::DOCKER_IMAGE_NAME->value => $imageName,
-                Param::GLOBAL_PROGRESS_NAME->value => "Loading {$imageName} image",
-            ],
-        );
+        if (empty(yield CommandHelper::isServiceRunning($namespace, 'mager_proxy'))) {
+            $this->io->error('Namespace are not prepared yet');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function transferAndLoadImage(string $namespace, string $imageName): \Generator
+    {
+        if (!$this->config->isLocal($namespace)) {
+            yield "upload /tmp/{$namespace}-{$imageName}.tar.gz:/tmp/{$namespace}-{$imageName}.tar.gz";
+        }
+
+        yield "docker load < /tmp/{$namespace}-{$imageName}.tar.gz";
+        yield "rm -f /tmp/{$namespace}-{$imageName}.tar.gz";
     }
 
     private function runJob(
@@ -176,8 +167,7 @@ final class DeployCommand extends Command
         string $imageName,
         string $serviceName,
         Service $service,
-        Server $server,
-    ): void {
+    ): \Generator {
         $constraint = ['node.role==worker'];
         if ($this->config->isSingleNode($namespace)) {
             $constraint = ['node.role==manager'];
@@ -185,51 +175,35 @@ final class DeployCommand extends Command
 
         $network = [
             "{$namespace}-main",
-            Config::MAGER_GLOBAL_NETWORK,
         ];
 
         $rand = bin2hex(random_bytes(8));
-        $server->exec(
-            DockerServiceCreate::class,
-            [
-                Param::GLOBAL_NAMESPACE->value => $namespace,
-                Param::DOCKER_SERVICE_IMAGE->value => $imageName,
-                Param::DOCKER_SERVICE_NAME->value => "{$serviceName}-job-{$rand}",
-                Param::DOCKER_SERVICE_MODE->value => 'replicated-job',
-                Param::DOCKER_SERVICE_REPLICAS->value => 1,
-                Param::DOCKER_SERVICE_COMMAND->value => $job,
-                Param::DOCKER_SERVICE_CONSTRAINTS->value => $constraint,
-                Param::DOCKER_SERVICE_NETWORK->value => $network,
-                Param::DOCKER_SERVICE_ENV->value => $service->env,
-                Param::GLOBAL_PROGRESS_NAME->value => "Executing {$job}",
-            ],
-        );
+        $name = "{$serviceName}-job-{$rand}";
+
+        yield DockerCreateService::create($namespace, $name, $imageName)
+            ->withMode('replicated-job')
+            ->withConstraints($constraint)
+            ->withNetworks($network)
+            ->withCommand($job)
+            ->withEnvs($service->env);
+
+        yield CommandHelper::removeService($namespace, $name, 'replicated-job');
     }
 
-    private function updateService(
-        string $namespace,
-        string $imageName,
-        string $serviceName,
-        Server $server,
-    ): void {
-        $server->exec(
-            DockerServiceUpdateImage::class,
-            [
-                Param::GLOBAL_NAMESPACE->value => $namespace,
-                Param::DOCKER_SERVICE_IMAGE->value => $imageName,
-                Param::DOCKER_SERVICE_NAME->value => $serviceName,
-            ],
-        );
-    }
-
-    private function createService(
+    private function deploy(
         string $namespace,
         string $imageName,
         string $serviceName,
         Service $service,
-        Server $server,
         bool $isLocal,
-    ): void {
+    ): \Generator {
+        // just update image if service exists
+        // TODO: update other configuration like cpu, labels, mount, ram
+        if (yield CommandHelper::isServiceRunning($namespace, $serviceName)) {
+            yield "docker service update --image {$imageName} --force {$namespace}-{$serviceName}";
+
+            return;
+        }
 
         $constraint = ['node.role==worker'];
         if ($this->config->isSingleNode($namespace)) {
@@ -238,7 +212,6 @@ final class DeployCommand extends Command
 
         $network = [
             "{$namespace}-main",
-            Config::MAGER_GLOBAL_NETWORK,
         ];
 
         $labels = [];
@@ -252,41 +225,36 @@ final class DeployCommand extends Command
         }
 
         $fullServiceName = "{$namespace}-{$serviceName}";
-        $labels[] = Http::rule($fullServiceName, $rule);
-        $labels[] = Http::tls($fullServiceName);
+        $labels[] = HttpHelper::rule($fullServiceName, $rule);
+        $labels[] = HttpHelper::tls($fullServiceName);
 
         /** @var ProxyPort $port */
         foreach ($service->proxy->ports as $port) {
-            $labels[] = Http::port($fullServiceName, $port->getPort());
+            $labels[] = HttpHelper::port($fullServiceName, $port->getPort());
         }
 
         if (!$isLocal) {
-            $labels[] = Http::certResolver($fullServiceName);
+            $labels[] = HttpHelper::certResolver($fullServiceName);
         }
 
-        $server->exec(
-            DockerServiceCreate::class,
-            [
-                Param::GLOBAL_NAMESPACE->value => $namespace,
-                Param::DOCKER_SERVICE_IMAGE->value => $imageName,
-                Param::DOCKER_SERVICE_NAME->value => $serviceName,
-                Param::DOCKER_SERVICE_REPLICAS->value => 1,
-                Param::DOCKER_SERVICE_CONSTRAINTS->value => $constraint,
-                Param::DOCKER_SERVICE_NETWORK->value => $network,
-                Param::DOCKER_SERVICE_ENV->value => $service->env,
-                Param::DOCKER_SERVICE_LABEL->value => $labels,
-                Param::DOCKER_SERVICE_MOUNT->value => $service->parseToDockerVolume($namespace),
-                Param::DOCKER_SERVICE_COMMAND->value => implode(' ', $service->cmd),
-                Param::DOCKER_SERVICE_UPDATE_ORDER->value => 'start-first',
-                Param::DOCKER_SERVICE_UPDATE_FAILURE_ACTION->value => 'rollback',
-                Param::DOCKER_SERVICE_LIMIT_CPU->value => $service->option->limitCpu,
-                Param::DOCKER_SERVICE_LIMIT_MEMORY->value => $service->option->limitMemory,
-            ],
-        );
+        yield DockerCreateService::create($namespace, $serviceName, $imageName)
+            ->withConstraints($constraint)
+            ->withNetworks($network)
+            ->withEnvs($service->env)
+            ->withLabels($labels)
+            ->withMounts($service->parseToDockerVolume($namespace))
+            ->withCommand(implode(' ', $service->cmd))
+            ->withUpdateOrder('start-first')
+            ->withUpdateFailureAction('rollback')
+            ->withLimitCpu($service->option->limitCpu)
+            ->withLimitMemory($service->option->limitMemory);
     }
 
-    private function setupTls(string $namespace, Service $service, Server $server): void
+    private function setupTls(string $namespace, Service $service): \Generator
     {
-        $server->generateTLSCertificate($namespace, $service->proxy->host);
+        $this->io->section("Generate TLS Certificate for {$service->proxy->host}");
+        yield CommandHelper::generateTlsCertificateLocally($namespace, $service->proxy->host);
+        ConfigHelper::registerTLSCertificateLocally($service->proxy->host);
+        yield CommandHelper::removeService($namespace, 'generate-tls-cert', 'replicated-job');
     }
 }

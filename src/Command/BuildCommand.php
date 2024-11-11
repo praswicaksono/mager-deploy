@@ -5,11 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Component\Config\Config;
-use App\Component\Server\LocalExecutor;
-use App\Component\Server\Task\DockerImageBuild;
-use App\Component\Server\Task\DockerImageSave;
-use App\Component\Server\Task\Param;
-use App\Helper\Server;
+use App\Component\TaskRunner\RunnerBuilder;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -27,6 +23,8 @@ use function Amp\File\exists;
 )]
 final class BuildCommand extends Command
 {
+    private SymfonyStyle $io;
+
     public function __construct(
         private readonly Config $config,
     ) {
@@ -69,11 +67,25 @@ final class BuildCommand extends Command
             InputOption::VALUE_REQUIRED,
             'Version of current build',
         );
+
+        $this->addOption(
+            'save',
+            null,
+            InputOption::VALUE_NONE,
+            'Save image to temporary folder',
+        );
+
+        $this->addOption(
+            'push',
+            null,
+            InputOption::VALUE_NONE,
+            'Push image to docker registry',
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
 
         $namespace = $input->getOption('namespace') ?? 'local';
         $version = $input->getOption('build') ?? 'latest';
@@ -84,38 +96,59 @@ final class BuildCommand extends Command
         Assert::notEmpty($name, '--name must be a non-empty string');
         Assert::true($this->config->isNotEmpty(), "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
 
-        $executor = new LocalExecutor('localhost');
-        $server = Server::withExecutor($executor, $io);
+        $r = RunnerBuilder::create()
+            ->withIO($this->io)
+            ->withConfig($this->config)
+            ->build($namespace, local: true);
 
         if (! exists($dockerfile)) {
-            $io->error('Dockerfile does not exist');
+            $this->io->error('Dockerfile does not exist');
 
             return Command::FAILURE;
         }
 
         $imageName = "{$namespace}-{$name}:{$version}";
 
-        $io->title('Building Image');
-        $server->exec(
-            DockerImageBuild::class,
-            [
-                Param::DOCKER_IMAGE_TAG->value => $imageName,
-                Param::DOCKER_IMAGE_TARGET->value => $target,
-                Param::GLOBAL_PROGRESS_NAME->value => "Building image {$imageName}",
-            ],
-        );
+        return $r->run($this->buildAndSaveImage(
+            $namespace,
+            $dockerfile,
+            $imageName,
+            $name,
+            $target,
+            $input->getOption('save') ?? false,
+            $input->getOption('push') ?? false,
+        ));
+    }
 
-        $server->exec(
-            DockerImageSave::class,
-            [
-                Param::GLOBAL_NAMESPACE->value => $namespace,
-                Param::DOCKER_IMAGE_TAG->value => $imageName,
-                Param::DOCKER_IMAGE_NAME->value => $name,
-                Param::GLOBAL_PROGRESS_NAME->value => "Saving image {$imageName} to {$namespace}-{$name}.tar.gz",
-            ],
-        );
+    public function buildAndSaveImage(
+        string $namespace,
+        string $file,
+        string $imageName,
+        string $name,
+        ?string $target = null,
+        bool $save = false,
+        bool $push = false,
+    ): \Generator {
+        $outputType = 'docker';
 
-        $io->success('Your image successfully built');
+        if ($push) {
+            $outputType = 'registry';
+        }
+
+        $build = "docker buildx build --tag {$imageName} --file {$file} --output {$outputType} --progress plain";
+
+        if (null !== $target) {
+            $build .= " --target {$target}";
+        }
+
+        yield $build . ' .';
+
+        if ($save) {
+            yield "docker save {$imageName} | gzip > /tmp/{$namespace}-{$name}.tar.gz";
+        }
+
+
+        $this->io->success('Your image successfully built');
 
         return Command::SUCCESS;
     }

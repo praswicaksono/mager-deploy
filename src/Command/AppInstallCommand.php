@@ -8,16 +8,11 @@ use App\Component\Config\AppDefinition;
 use App\Component\Config\Config;
 use App\Component\Config\Definition\ProxyPort;
 use App\Component\Config\YamlAppServiceDefinitionBuilder;
-use App\Component\Server\ExecutorFactory;
-use App\Component\Server\Helper;
-use App\Component\Server\Helper\Traefik\Http;
-use App\Component\Server\Result;
-use App\Component\Server\Task\AppDownloadFromRemote;
-use App\Component\Server\Task\DockerConfigCreate;
-use App\Component\Server\Task\DockerConfigRemove;
-use App\Component\Server\Task\DockerServiceCreate;
-use App\Component\Server\Task\Param;
-use App\Helper\Server;
+use App\Component\TaskRunner\RunnerBuilder;
+use App\Component\TaskRunner\TaskBuilder\DockerCreateService;
+use App\Helper\CommandHelper;
+use App\Helper\HttpHelper;
+use App\Helper\StringHelper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -34,6 +29,8 @@ use function Amp\File\exists;
 )]
 final class AppInstallCommand extends Command
 {
+    private SymfonyStyle $io;
+
     public function __construct(
         private readonly Config $config,
     ) {
@@ -57,24 +54,19 @@ final class AppInstallCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
 
         $namespace = $input->getArgument('namespace');
         $url = $input->getArgument('url');
 
-        $executor = (new ExecutorFactory($this->config))($namespace);
-        $server = Server::withExecutor($executor, $io);
+        // TODO: verify namespace
 
-        /** @var Result<string> $result */
-        $result = $server->exec(
-            AppDownloadFromRemote::class,
-            [
-                Param::GLOBAL_NAMESPACE->value => $namespace,
-                Param::APP_URL->value => $url,
-            ],
-        );
+        $r = RunnerBuilder::create()
+            ->withIO($this->io)
+            ->withConfig($this->config)
+            ->build($namespace);
 
-        $cwd = $result->data;
+        $cwd = $r->run($this->resolvePackage($namespace, $url));
 
         if (! exists($cwd . '/mager.yaml')) {
             throw new \InvalidArgumentException("Cant find 'mager.yaml' in '$cwd'");
@@ -84,8 +76,22 @@ final class AppInstallCommand extends Command
         /** @var AppDefinition $appDefinition */
         $appDefinition = $appDefinitionBuilder->build($cwd . '/mager.yaml');
 
-        if ($server->isServiceRunning("{$namespace}-app-{$appDefinition->name}")) {
-            throw new \Exception('Apps already running for this namespace, use mager app:update to update it');
+        if (($code = $r->run($this->deploy($namespace, $cwd, $appDefinition))) === Command::FAILURE) {
+            return $code;
+        }
+
+        $this->config->set("{$namespace}.apps.{$url}", true);
+        $this->config->save();
+
+        return $code;
+    }
+
+    private function deploy(string $namespace, string $cwd, AppDefinition $appDefinition): \Generator
+    {
+        if (!empty(yield CommandHelper::isServiceRunning($namespace, "app-{$appDefinition->name}"))) {
+            $this->io->error("Service '{$appDefinition->name}' is already deployed.");
+
+            return Command::FAILURE;
         }
 
         $constraint = ['node.role==worker'];
@@ -95,7 +101,6 @@ final class AppInstallCommand extends Command
 
         $network = [
             "{$namespace}-main",
-            Config::MAGER_GLOBAL_NETWORK,
         ];
 
         // Setup proxy if defined
@@ -110,16 +115,16 @@ final class AppInstallCommand extends Command
             }
 
             $fullServiceName = "{$namespace}-{$appDefinition->name}";
-            $labels[] = Http::rule($fullServiceName, $rule);
-            $labels[] = Http::tls($fullServiceName);
+            $labels[] = HttpHelper::rule($fullServiceName, $rule);
+            $labels[] = HttpHelper::tls($fullServiceName);
 
             /** @var ProxyPort $port */
             foreach ($appDefinition->proxy->ports as $port) {
-                $labels[] = Http::port($fullServiceName, $port->getPort());
+                $labels[] = HttpHelper::port($fullServiceName, $port->getPort());
             }
 
             if (!$this->config->isLocal($namespace)) {
-                $labels[] = Http::certResolver($fullServiceName);
+                $labels[] = HttpHelper::certResolver($fullServiceName);
             }
         }
 
@@ -135,29 +140,19 @@ final class AppInstallCommand extends Command
                 '--build' => 'latest',
             ]);
 
-            $this->getApplication()->doRun($build, $output);
+            $this->getApplication()->doRun($build, $this->io);
             $image = "{$namespace}-{$appDefinition->name}:latest";
         }
 
-        // Create config
+        // Create docker config
         $configs = [];
         foreach ($appDefinition->config as $config) {
-            $configName = Helper::extractConfigNameFromPath($namespace, $config->srcPath);
-            $server->exec(
-                DockerConfigRemove::class,
-                [
-                    Param::DOCKER_CONFIG_NAME->value => $configName,
-                ],
-                continueOnError: true,
-            );
+            $configName = StringHelper::extractConfigNameFromPath($namespace, $config->srcPath);
+            $configFile = $cwd . '/' . $config->srcPath;
 
-            $server->exec(
-                DockerConfigCreate::class,
-                [
-                    Param::GLOBAL_NAMESPACE->value => $namespace,
-                    Param::DOCKER_CONFIG_FILE_PATH->value  => $cwd . '/' . $config->srcPath,
-                ],
-            );
+            yield sprintf('docker config rm `docker config ls --format "{{.ID}}" --filter name=%s`', $configName);
+
+            yield "cat {$configFile} | docker config create {$configName} -";
 
             $configs[] = sprintf(
                 'source=%s,target=%s,mode=0600',
@@ -166,29 +161,74 @@ final class AppInstallCommand extends Command
             );
         }
 
-
-        $server->exec(
-            DockerServiceCreate::class,
-            [
-                Param::GLOBAL_NAMESPACE->value => $namespace,
-                Param::DOCKER_SERVICE_IMAGE->value => $image,
-                Param::DOCKER_SERVICE_NAME->value => 'app-' . $appDefinition->name,
-                Param::DOCKER_SERVICE_REPLICAS->value => 1,
-                Param::DOCKER_SERVICE_CONSTRAINTS->value => $constraint,
-                Param::DOCKER_SERVICE_NETWORK->value => $network,
-                Param::DOCKER_SERVICE_ENV->value => $appDefinition->resolveEnvValue(),
-                Param::DOCKER_SERVICE_MOUNT->value => $appDefinition->parseToDockerVolume($namespace),
-                Param::DOCKER_SERVICE_COMMAND->value => $appDefinition->cmd,
-                Param::DOCKER_SERVICE_UPDATE_ORDER->value => 'start-first',
-                Param::DOCKER_SERVICE_UPDATE_FAILURE_ACTION->value => 'rollback',
-                Param::DOCKER_SERVICE_CONFIG->value => $configs,
-                Param::DOCKER_SERVICE_LABEL->value => $labels,
-            ],
-        );
-
-        $this->config->set("{$namespace}.apps.{$url}", true);
-        $this->config->save();
+        yield DockerCreateService::create($namespace, "app-{$appDefinition->name}", $image)
+            ->withConstraints($constraint)
+            ->withNetworks($network)
+            ->withLabels($labels)
+            ->withEnvs($appDefinition->resolveEnvValue())
+            ->withMounts($appDefinition->parseToDockerVolume($namespace))
+            ->withCommand($appDefinition->cmd)
+            ->withUpdateOrder('start-first')
+            ->withUpdateFailureAction('rollback')
+            ->withConfigs($configs);
 
         return Command::SUCCESS;
+    }
+
+    private function resolvePackage(string $namespace, string $url): \Generator
+    {
+        return match (true) {
+            str_starts_with($url, 'https://github.com') => yield from $this->downloadFromGithub($namespace, $url),
+            str_starts_with($url, 'file://') => yield from $this->symlinkFromLocalFolder($namespace, $url),
+            default => throw new \InvalidArgumentException('URL are not supported yet'),
+        };
+    }
+
+    /**
+     * @return string[]
+     */
+    private function prepareWorkingDirectory(string $namespace, string $url): array
+    {
+        // Create local folder to store package
+        $dir = getenv('HOME') . '/.mager/apps/' . $namespace;
+        $appName = explode('/', $url);
+        $appName = end($appName);
+
+        $cwd = $dir . '/' . $appName;
+
+        return [
+            $dir, $appName, $cwd,
+        ];
+    }
+
+    private function downloadFromGithub(string $namespace, string $url): \Generator
+    {
+        // Resolve tag, use master if not defined
+        [$githubUrl, $tag] = explode('@', $url);
+        $file = '/archive/refs/heads/master.zip';
+        if (!empty($tag)) {
+            $file = "/archive/refs/tags/{$tag}.zip";
+        }
+        $githubUrl .= $file;
+
+        [$dir, $appName, $cwd] = $this->prepareWorkingDirectory($namespace, $url);
+
+        yield "mkdir -p -m755 {$dir}";
+        yield "curl -L --progress-bar {$githubUrl} -o '{$dir}/{$appName}.zip'";
+        yield "unzip {$dir}/{$appName}.zip -d {$dir}";
+        yield "mv {$dir}/{$appName}-master {$dir}/{$appName} && chmod -R 755 {$dir}/{$appName}";
+        yield "rm -f {$dir}/{$appName}.zip";
+
+        return $cwd;
+    }
+
+    private function symlinkFromLocalFolder(string $namespace, string $url): \Generator
+    {
+        [$dir, $appName, $cwd] = $this->prepareWorkingDirectory($namespace, $url);
+
+        yield "mkdir -p -m755 {$dir}";
+        yield "ln -sf {$url} {$dir}/{$appName}";
+
+        return $cwd;
     }
 }

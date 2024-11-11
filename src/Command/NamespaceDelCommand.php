@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Component\Config\Config;
-use App\Component\Server\ExecutorFactory;
-use App\Component\Server\Task\DockerServiceRemoveByNamespace;
-use App\Component\Server\Task\Param;
-use App\Helper\Server;
+use App\Component\TaskRunner\RunnerBuilder;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -23,6 +20,8 @@ use Webmozart\Assert\Assert;
 )]
 final class NamespaceDelCommand extends Command
 {
+    private SymfonyStyle $io;
+
     public function __construct(
         private readonly Config $config,
     ) {
@@ -32,36 +31,42 @@ final class NamespaceDelCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('namespace', InputArgument::REQUIRED, 'Namespace name')
+            ->addArgument('namespace', InputArgument::REQUIRED, 'Namespace')
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
         $namespace = $input->getArgument('namespace');
 
         $config = $this->config->get($namespace);
         Assert::notEmpty($config, "Namespace {$namespace} are not exists");
 
-        $executor = (new ExecutorFactory($this->config))($namespace);
-        $server = Server::withExecutor($executor, $io);
+        $r = RunnerBuilder::create()
+            ->withIO($this->io)
+            ->withConfig($this->config)
+            ->build($namespace);
 
-        $io->title("Removing namespace {$namespace} and associated services");
+        $this->io->title("Removing namespace {$namespace} and associated services");
 
-        if ($server->isDockerSwarmEnabled()) {
-            $server->exec(
-                DockerServiceRemoveByNamespace::class,
-                [
-                    Param::GLOBAL_NAMESPACE->value => $namespace,
-                ],
-                continueOnError: true,
-            );
+        return $r->run($this->removeAllAssociatedServices($namespace));
+    }
+
+    private function removeAllAssociatedServices(string $namespace): \Generator
+    {
+        if (empty(yield 'docker node ls')) {
+            $this->io->error('Docker swarm is not enabled yet');
+
+            return Command::FAILURE;
         }
+
+        yield sprintf('docker service rm `docker service ls --format "{{.ID}}" --filter name=%s-`', $namespace);
+        yield sprintf('docker network rm `docker network ls --format "{{.ID}}" --filter name=%s-main`', $namespace);
 
         $this->config->delete($namespace)->save();
 
-        $io->success('Namespace has been deleted and services successfully removed');
+        $this->io->success('Namespace has been deleted and services successfully removed');
 
         return Command::SUCCESS;
     }
