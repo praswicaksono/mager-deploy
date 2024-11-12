@@ -19,8 +19,10 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Webmozart\Assert\Assert;
 
 #[AsCommand(
     name: 'deploy',
@@ -45,6 +47,13 @@ final class DeployCommand extends Command
             'Deploy service to servers that listed for given namespace',
             'local',
         );
+
+        $this->addOption(
+            'dev',
+            null,
+            InputOption::VALUE_NONE,
+            'Setup for mager for local development include proxy auto configuration',
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -52,8 +61,14 @@ final class DeployCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
 
         $namespace = $input->getArgument('namespace');
+        $override = $input->getOption('dev') ? 'dev' : 'prod';
+
+        $config = $this->config->get($namespace);
+
+        Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
+
         /** @var ServiceDefinition $definition */
-        $definition = $this->definitionBuilder->build();
+        $definition = $this->definitionBuilder->build(override: $override);
 
         $r = RunnerBuilder::create()
             ->withIO($this->io)
@@ -103,7 +118,7 @@ final class DeployCommand extends Command
                 ));
             }
 
-            if ($isLocal) {
+            if (null !== $service->proxy->rule && $isLocal) {
                 $r->run($this->setupTls($namespace, $service));
             }
 
@@ -185,6 +200,7 @@ final class DeployCommand extends Command
             ->withConstraints($constraint)
             ->withNetworks($network)
             ->withCommand($job)
+            ->withRestartCondition('none')
             ->withEnvs($service->env);
 
         yield CommandHelper::removeService($namespace, $name, 'replicated-job');
@@ -219,20 +235,19 @@ final class DeployCommand extends Command
         $labels[] = 'traefik.docker.lbswarm=true';
         $labels[] = 'traefik.enable=true';
 
-        $rule = "Host(`{$service->proxy->host}`)";
+        $fullServiceName = "{$namespace}-{$serviceName}";
         if (null !== $service->proxy->rule) {
             $rule = str_replace('{$host}', $service->proxy->host, $service->proxy->rule);
-        }
 
-        $fullServiceName = "{$namespace}-{$serviceName}";
-        $labels[] = HttpHelper::rule($fullServiceName, $rule);
-        $labels[] = HttpHelper::tls($fullServiceName);
+            $labels[] = HttpHelper::rule($fullServiceName, $rule);
+            $labels[] = HttpHelper::tls($fullServiceName);
 
-        /** @var ProxyPort $port */
-        foreach ($service->proxy->ports as $port) {
-            $labels[] = HttpHelper::port($fullServiceName, $port->getPort());
-            if (443 === $port->getPort()) {
-                $labels[] = HttpHelper::tlsLoadBalancer($fullServiceName);
+            /** @var ProxyPort $port */
+            foreach ($service->proxy->ports as $port) {
+                $labels[] = HttpHelper::port($fullServiceName, $port->getPort());
+                if (443 === $port->getPort()) {
+                    $labels[] = HttpHelper::tlsLoadBalancer($fullServiceName);
+                }
             }
         }
 
@@ -245,10 +260,13 @@ final class DeployCommand extends Command
             ->withNetworks($network)
             ->withEnvs($service->resolveEnvValue())
             ->withLabels($labels)
+            ->withRestartMaxAttempts(3)
             ->withMounts($service->parseToDockerVolume($namespace))
             ->withCommand(implode(' ', $service->cmd))
             ->withUpdateOrder('start-first')
             ->withUpdateFailureAction('rollback')
+            ->withStopSignal($service->stopSignal)
+            ->withHosts($service->hosts)
             ->withLimitCpu($service->option->limitCpu)
             ->withLimitMemory($service->option->limitMemory);
     }

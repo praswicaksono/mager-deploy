@@ -67,7 +67,11 @@ final class RunnerBuilder
 
     public function build(string $namespace, bool $local = false, bool $managerOnly = true): RunnerInterface
     {
-        if ($local || $this->config->isLocal($namespace)) {
+        if ($local) {
+            return new LocalRunner($this->io);
+        }
+
+        if ($this->config->isLocal($namespace)) {
             return new LocalRunner($this->io);
         }
 

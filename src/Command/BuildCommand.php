@@ -92,9 +92,10 @@ final class BuildCommand extends Command
         $name = $input->getOption('name') ?? null;
         $target = $input->getOption('target') ?? null;
         $dockerfile = $input->getOption('file') ?? 'Dockerfile';
+        $config = $this->config->get($namespace);
 
         Assert::notEmpty($name, '--name must be a non-empty string');
-        Assert::true($this->config->isNotEmpty(), "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
+        Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
         $r = RunnerBuilder::create()
             ->withIO($this->io)

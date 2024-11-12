@@ -6,5 +6,5 @@ namespace App\Component\Config;
 
 interface DefinitionBuilder
 {
-    public function build(string $definitionPath = 'mager.yaml'): Definition;
+    public function build(string $definitionPath = 'mager.yaml', ?string $override = null): Definition;
 }

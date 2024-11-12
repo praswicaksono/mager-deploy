@@ -18,6 +18,7 @@ final readonly class Service
      * @param array<int, string>              $volumes
      * @param array<int, string>              $beforeDeploy
      * @param array<int, string>              $afterDeploy
+     * @param array<int, string>              $hosts
      */
     public function __construct(
         public string $name,
@@ -27,7 +28,9 @@ final readonly class Service
         public array $volumes = [],
         public array $beforeDeploy = [],
         public array $afterDeploy = [],
+        public array $hosts = [],
         public ?Option $option = null,
+        public ?string $stopSignal = null,
     ) {}
 
     /**
@@ -38,7 +41,9 @@ final readonly class Service
      *      'volumes': array{}|array<int, string>,
      *      'before_deploy': array{}|array<int, string>,
      *      'after_deploy': array{}|array<int, string>,
-     *      'option': array{'limit_cpu': float, 'limit_memory': string}
+     *      'hosts': array{}|array<int, string>,
+     *      'option': array{'limit_cpu': float, 'limit_memory': string},
+     *      'stop_signal': string|null
      *  }>
      */
     public function toArray(): array
@@ -51,7 +56,9 @@ final readonly class Service
                 'volumes' => $this->volumes,
                 'before_deploy' => $this->beforeDeploy,
                 'after_deploy' => $this->afterDeploy,
+                'hosts' => $this->hosts,
                 'option' => $this->option->toArray(),
+                'stop_signal' => $this->stopSignal,
             ],
         ];
     }

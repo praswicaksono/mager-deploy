@@ -13,6 +13,11 @@ trait EnvResolver
     {
         $envs = [];
         foreach ($this->env as $name => $value) {
+            if (is_int($value) || is_float($value)) {
+                $envs[] = "{$name}={$value}";
+                continue;
+            }
+
             if (str_starts_with($value, '${') && str_ends_with($value, '}')) {
                 $envName = str_replace('${', '', $value);
                 $envName = str_replace('}', '', $envName);

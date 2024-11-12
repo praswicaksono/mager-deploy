@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Webmozart\Assert\Assert;
 
 #[AsCommand(
     name: 'service:del',
@@ -41,6 +42,10 @@ final class ServiceDelCommand extends Command
         $namespace = $input->getArgument('namespace');
         $name = $input->getArgument('name');
 
+        $config = $this->config->get($namespace);
+
+        Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
+
         $r = RunnerBuilder::create()
             ->withIO($this->io)
             ->withConfig($this->config)
@@ -53,7 +58,7 @@ final class ServiceDelCommand extends Command
     {
         $fullServiceName = "{$namespace}-{$name}";
 
-        $id = yield sprintf('docker service ls --format "{{.ID}}" --filter name=%s', $fullServiceName);
+        $id = yield sprintf('docker service ls --format "{{.ID}}|{{.Name}}" --filter name=%s', $fullServiceName);
 
         if (empty($id)) {
             $this->io->error("Service {$fullServiceName} is not running");
@@ -61,10 +66,19 @@ final class ServiceDelCommand extends Command
             return Command::FAILURE;
         }
 
-        yield sprintf('docker service rm %s', $id);
+        foreach (explode(PHP_EOL, $id) as $services) {
+            if (empty($services)) {
+                continue;
+            }
 
-        $this->io->success('Service has been deleted.');
+            [$serviceId, $name] = explode('|', $services);
 
-        return Command::SUCCESS;
+            if ($name === $fullServiceName) {
+                yield sprintf('docker service rm %s', $serviceId);
+                $this->io->success('Service has been deleted.');
+
+                return Command::SUCCESS;
+            }
+        }
     }
 }

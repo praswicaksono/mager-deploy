@@ -11,7 +11,7 @@ use App\Component\Config\Definition\Config as ConfigDefinition;
 
 final class YamlAppServiceDefinitionBuilder implements DefinitionBuilder
 {
-    public function build(string $definitionPath = 'mager.yaml'): Definition
+    public function build(string $definitionPath = 'mager.yaml', ?string $override = null): Definition
     {
         $definitionArray = Yaml::parseFile($definitionPath);
 

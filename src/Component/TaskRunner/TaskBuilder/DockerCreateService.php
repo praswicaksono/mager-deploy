@@ -30,6 +30,9 @@ final class DockerCreateService implements TaskInterface
     /** @var string[] */
     private array $configs = [];
 
+    /** @var string[] */
+    private array $hosts = [];
+
     private ?string $command = null;
 
     private ?string $mode = null;
@@ -43,6 +46,12 @@ final class DockerCreateService implements TaskInterface
     private ?float $limitCpu = null;
 
     private ?string $limitMemory = null;
+
+    private ?string $restartCondition = null;
+
+    private ?int $restartMaxAttempts = null;
+
+    private ?string $stopSignal = null;
 
     private int $replicas = 1;
 
@@ -58,6 +67,17 @@ final class DockerCreateService implements TaskInterface
         $self->namespace = $namespace;
         $self->name = $name;
         $self->image = $image;
+
+        return $self;
+    }
+
+    /**
+     * @param string[] $hosts
+     */
+    public function withHosts(array $hosts): self
+    {
+        $self = clone $this;
+        $self->hosts = $hosts;
 
         return $self;
     }
@@ -203,6 +223,30 @@ final class DockerCreateService implements TaskInterface
         return $self;
     }
 
+    public function withRestartCondition(string $restartCondition): self
+    {
+        $self = clone $this;
+        $self->restartCondition = $restartCondition;
+
+        return $self;
+    }
+
+    public function withRestartMaxAttempts(int $restartMaxAttempts): self
+    {
+        $self = clone $this;
+        $self->restartMaxAttempts = $restartMaxAttempts;
+
+        return $self;
+    }
+
+    public function withStopSignal(?string $stopSignal = null): self
+    {
+        $self = clone $this;
+        $self->stopSignal = $stopSignal;
+
+        return $self;
+    }
+
     public function cmd(): array
     {
         $cmd = ['docker', 'service', 'create'];
@@ -214,6 +258,7 @@ final class DockerCreateService implements TaskInterface
         $cmd = Util::buildOptions('--label', $this->labels, $cmd);
         $cmd = Util::buildOptions('--mount', $this->mounts, $cmd);
         $cmd = Util::buildOptions('--config', $this->configs, $cmd);
+        $cmd = Util::buildOptions('--host', $this->hosts, $cmd);
 
         if (null !== $this->updateFailureAction) {
             $cmd[] = "--update-failure-action {$this->updateFailureAction}";
@@ -237,6 +282,18 @@ final class DockerCreateService implements TaskInterface
 
         if (null !== $this->workdir) {
             $cmd[] = "--workdir {$this->workdir}";
+        }
+
+        if (null !== $this->restartCondition) {
+            $cmd[] = "--restart-condition {$this->restartCondition}";
+        }
+
+        if (null !== $this->restartMaxAttempts) {
+            $cmd[] = "--restart-max-attempts {$this->restartMaxAttempts}";
+        }
+
+        if (null !== $this->stopSignal) {
+            $cmd[] = "--stop-signal {$this->stopSignal}";
         }
 
         $cmd[] = "--name {$this->namespace}-{$this->name}";

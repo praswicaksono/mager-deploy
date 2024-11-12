@@ -12,11 +12,20 @@ use App\Component\Config\Definition\Service;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Yaml\Yaml;
 
+use function Amp\File\exists;
+
 final class YamlServiceDefinitionBuilder implements DefinitionBuilder
 {
-    public function build(string $definitionPath = 'mager.yaml'): ServiceDefinition
+    public function build(string $definitionPath = 'mager.yaml', ?string $override = null): ServiceDefinition
     {
         $definitionArray = Yaml::parseFile($definitionPath);
+
+        if (null !== $override) {
+            if (exists("./mager.{$override}.yaml")) {
+                $arrayOverride = Yaml::parseFile("mager.{$override}.yaml");
+                $definitionArray = array_replace_recursive($definitionArray, $arrayOverride);
+            }
+        }
 
         $buildConfig = $definitionArray['build'] ?? [];
         $build = new Build(
@@ -49,7 +58,9 @@ final class YamlServiceDefinitionBuilder implements DefinitionBuilder
                     volumes: $service['volumes'] ?? [],
                     beforeDeploy: $service['before_deploy'] ?? [],
                     afterDeploy: $service['after_deploy'] ?? [],
+                    hosts: $service['hosts'] ?? [],
                     option: $option,
+                    stopSignal: $service['stop_signal'] ?? null,
                 ),
             );
         }

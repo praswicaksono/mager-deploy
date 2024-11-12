@@ -41,7 +41,7 @@ final class NamespaceDelCommand extends Command
         $namespace = $input->getArgument('namespace');
 
         $config = $this->config->get($namespace);
-        Assert::notEmpty($config, "Namespace {$namespace} are not exists");
+        Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
         $r = RunnerBuilder::create()
             ->withIO($this->io)
