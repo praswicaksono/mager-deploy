@@ -19,7 +19,7 @@ final readonly class Build
             return null;
         }
 
-        [$name, $tag] = explode(':', $this->image);
+        @[$name, $tag] = explode(':{', $this->image);
         if (empty($tag)) {
             return $this->image;
         }
@@ -30,7 +30,7 @@ final readonly class Build
             return $this->image;
         }
 
-        [$env, $default] = explode(':', $tag);
+        [$env, $default] = explode(':-', $tag);
 
         $env = str_replace('{$', '', $env);
         $env = str_replace('}', '', $env);

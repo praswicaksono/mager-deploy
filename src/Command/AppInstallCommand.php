@@ -105,7 +105,7 @@ final class AppInstallCommand extends Command
 
         // Setup proxy if defined
         $labels = [];
-        if ($appDefinition->proxy) {
+        if ($appDefinition->proxy !== null) {
             $labels[] = 'traefik.docker.lbswarm=true';
             $labels[] = 'traefik.enable=true';
 
@@ -142,6 +142,7 @@ final class AppInstallCommand extends Command
 
             $this->getApplication()->doRun($build, $this->io);
             $image = "{$namespace}-{$appDefinition->name}:latest";
+            yield from CommandHelper::transferAndLoadImage($namespace, $image, $this->config->isLocal($namespace));
         }
 
         // Create docker config
@@ -150,7 +151,9 @@ final class AppInstallCommand extends Command
             $configName = StringHelper::extractConfigNameFromPath($namespace, $config->srcPath);
             $configFile = $cwd . '/' . $config->srcPath;
 
-            yield sprintf('docker config rm `docker config ls --format "{{.ID}}" --filter name=%s`', $configName);
+            if (!empty(yield sprintf('docker config ls --format "{{.ID}}" --filter name=%s', $configName))) {
+                yield sprintf('docker config rm `docker config ls --format "{{.ID}}" --filter name=%s`', $configName);
+            }
 
             yield "cat {$configFile} | docker config create {$configName} -";
 
@@ -179,7 +182,7 @@ final class AppInstallCommand extends Command
     {
         return match (true) {
             str_starts_with($url, 'https://github.com') => yield from $this->downloadFromGithub($namespace, $url),
-            str_starts_with($url, 'file://') => yield from $this->symlinkFromLocalFolder($namespace, $url),
+            str_starts_with($url, 'file://') => yield from $this->symlinkFromLocalFolder($namespace, str_replace('file://', '', $url)),
             default => throw new \InvalidArgumentException('URL are not supported yet'),
         };
     }
@@ -224,10 +227,10 @@ final class AppInstallCommand extends Command
 
     private function symlinkFromLocalFolder(string $namespace, string $url): \Generator
     {
-        [$dir, $appName, $cwd] = $this->prepareWorkingDirectory($namespace, $url);
+        [$dir, , $cwd] = $this->prepareWorkingDirectory($namespace, $url);
 
         yield "mkdir -p -m755 {$dir}";
-        yield "ln -sf {$url} {$dir}/{$appName}";
+        yield "ln -nsf {$url} {$dir}";
 
         return $cwd;
     }

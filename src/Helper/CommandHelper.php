@@ -47,4 +47,15 @@ final class CommandHelper
             $mode,
         );
     }
+
+    public static function transferAndLoadImage(string $namespace, string $imageName, bool $isLocal): \Generator
+    {
+        if (!$isLocal) {
+            yield "upload /tmp/{$namespace}-{$imageName}.tar.gz:/tmp/{$namespace}-{$imageName}.tar.gz";
+        }
+
+        yield "docker load < /tmp/{$namespace}-{$imageName}.tar.gz";
+        yield "rm -f /tmp/{$namespace}-{$imageName}.tar.gz";
+        yield 'docker image prune -a';
+    }
 }

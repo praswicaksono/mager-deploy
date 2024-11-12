@@ -99,7 +99,7 @@ final class DeployCommand extends Command
         $this->getApplication()->doRun($build, $output);
 
         $this->io->title('Transfer and Load Image');
-        $r->run($this->transferAndLoadImage($namespace, $definition->name));
+        $r->run(CommandHelper::transferAndLoadImage($namespace, $definition->name, $this->config->isLocal($namespace)));
 
         $this->io->title('Deploying Service');
         $isLocal = $this->config->get("{$namespace}.is_local");
@@ -174,6 +174,7 @@ final class DeployCommand extends Command
 
         yield "docker load < /tmp/{$namespace}-{$imageName}.tar.gz";
         yield "rm -f /tmp/{$namespace}-{$imageName}.tar.gz";
+        yield 'docker image prune -a';
     }
 
     private function runJob(

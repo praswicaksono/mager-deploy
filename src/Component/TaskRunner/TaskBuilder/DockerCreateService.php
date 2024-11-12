@@ -148,7 +148,7 @@ final class DockerCreateService implements TaskInterface
         return $self;
     }
 
-    public function withCommand(string $command): self
+    public function withCommand(?string $command = null): self
     {
         $self = clone $this;
         $self->command = $command;
