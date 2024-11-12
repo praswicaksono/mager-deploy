@@ -44,6 +44,21 @@ Before do deployment server need to be prepared first. It need to install requir
 mager prepare your_namespace
 ```
 
+## Trusting CA Certificate When Using Local Namespace
+
+When developing on `local` namespace, mager will automatically generate TLS certificate using mkcert, so you have to install CA Root Certificate in order make it trusted.
+
+First install mkcert locally
+```shell
+sudo apt install mkcert
+brew install mkcert
+```
+
+Then after you run `mager prepare local`, install CA Root Certificate
+```shell
+CAROOT=~/.mager/certs mkcert -install
+```
+
 ## Deploying
 
 For example we have this following `mager` definition in our project dir
