@@ -46,7 +46,7 @@ final class DeployCommand extends Command
     {
         $this->addArgument(
             'namespace',
-            InputArgument::OPTIONAL,
+            InputArgument::REQUIRED,
             'Deploy service to servers that listed for given namespace',
         );
 
@@ -75,7 +75,7 @@ final class DeployCommand extends Command
 
         $override = 'prod';
         if ($this->isPreview) {
-            Assert::eq($namespace, 'local', "Deploy preview require non-local namespace");
+            Assert::eq($namespace, 'local', 'Deploy preview require non-local namespace');
             $override = 'preview';
         }
 
@@ -92,7 +92,9 @@ final class DeployCommand extends Command
         $definition = $this->definitionBuilder->build(override: $override);
 
         $this->io->title('Checking Requirement');
-        if (! runOnManager(fn() => $this->ensureServerArePrepared($namespace), $namespace)) {
+        if (! runOnManager(fn() => CommandHelper::ensureServerArePrepared($namespace), $namespace)) {
+            $this->io->error("Please run 'mager prepare {$namespace}' first");
+
             return Command::FAILURE;
         }
 
@@ -101,16 +103,17 @@ final class DeployCommand extends Command
         $version = getenv('VERSION');
         $version = false === $version ? 'latest' : $version;
 
-        if ($this->isPreview && $version !== 'latest') {
-            $version = runLocally(function() {
+        if ($this->isPreview && 'latest' !== $version) {
+            $version = runLocally(function () {
                 // try to look github sha commit first
                 $version = getenv('GITHUB_SHA');
-                $version = $version !== false ? $version : yield 'git rev-parse HEAD';
+                $version = false !== $version ? $version : yield 'git rev-parse HEAD';
+
                 return $version ?? 'latest';
             }, throwError: false);
         }
 
-        if ($version === 'latest') {
+        if ('latest' === $version) {
             $this->io->warning('VERSION environment variable is not detected, using latest as image tag');
         }
 
@@ -179,35 +182,6 @@ final class DeployCommand extends Command
         return Command::SUCCESS;
     }
 
-    private function ensureServerArePrepared(string $namespace): \Generator
-    {
-        $node = yield 'docker node ls';
-        if (empty($node)) {
-            $this->io->error('Docker swarm are not initialized yet');
-
-            return false;
-        }
-
-        if (empty(yield CommandHelper::isServiceRunning($namespace, 'mager_proxy'))) {
-            $this->io->error('Namespace are not prepared yet');
-
-            return false;
-        }
-
-        return true;
-    }
-
-    private function transferAndLoadImage(string $namespace, string $imageName): \Generator
-    {
-        if (!$this->config->isLocal($namespace)) {
-            yield "upload /tmp/{$namespace}-{$imageName}.tar.gz:/tmp/{$namespace}-{$imageName}.tar.gz";
-        }
-
-        yield "docker load < /tmp/{$namespace}-{$imageName}.tar.gz";
-        yield "rm -f /tmp/{$namespace}-{$imageName}.tar.gz";
-        yield 'docker image prune -a';
-    }
-
     private function runJob(
         string $job,
         string $namespace,
@@ -251,6 +225,19 @@ final class DeployCommand extends Command
             yield "docker service update --image {$imageName} --force {$namespace}-{$serviceName}";
 
             return;
+        }
+
+        if (!empty($service->executeOnce)) {
+            $this->io->section('Executing one time deployment hook');
+            foreach ($service->executeOnce as $job) {
+                yield from $this->runJob(
+                    job: $job,
+                    namespace: $namespace,
+                    imageName: $imageName,
+                    serviceName: $service->name,
+                    service: $service,
+                );
+            }
         }
 
         $constraint = ['node.role==worker'];

@@ -82,7 +82,7 @@ final class AppInstallCommand extends Command
 
     private function deploy(string $namespace, string $cwd, AppDefinition $appDefinition): \Generator
     {
-        if (!empty(yield CommandHelper::isServiceRunning($namespace, "app-{$appDefinition->name}"))) {
+        if (!empty(yield CommandHelper::isServiceRunning($namespace, $appDefinition->name))) {
             $this->io->error("Service '{$appDefinition->name}' is already deployed.");
 
             return Command::FAILURE;
@@ -99,7 +99,7 @@ final class AppInstallCommand extends Command
 
         // Setup proxy if defined
         $labels = [];
-        if ($appDefinition->proxy !== null) {
+        if (null !== $appDefinition->proxy) {
             $labels[] = 'traefik.docker.lbswarm=true';
             $labels[] = 'traefik.enable=true';
 
@@ -158,7 +158,7 @@ final class AppInstallCommand extends Command
             );
         }
 
-        yield DockerCreateService::create($namespace, "app-{$appDefinition->name}", $image)
+        yield DockerCreateService::create($namespace, $appDefinition->name, $image)
             ->withConstraints($constraint)
             ->withNetworks($network)
             ->withLabels($labels)

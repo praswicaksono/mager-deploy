@@ -56,6 +56,7 @@ final class YamlServiceDefinitionBuilder implements DefinitionBuilder
                     cmd: $service['cmd'] ?? [],
                     env: $service['env'] ?? [],
                     volumes: $service['volumes'] ?? [],
+                    executeOnce: $service['execute_once'] ?? [],
                     beforeDeploy: $service['before_deploy'] ?? [],
                     afterDeploy: $service['after_deploy'] ?? [],
                     hosts: $service['hosts'] ?? [],

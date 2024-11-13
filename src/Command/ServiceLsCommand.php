@@ -50,6 +50,7 @@ final class ServiceLsCommand extends Command
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
 
         runOnManager(fn() => $this->listServices($namespace), on: $namespace, showProgress: false, throwError: false);
+
         return Command::SUCCESS;
     }
 

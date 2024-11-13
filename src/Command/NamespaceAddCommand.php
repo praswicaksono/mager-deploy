@@ -38,20 +38,32 @@ final class NamespaceAddCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $namespace = $input->getArgument('namespace');
+        $isLocal = 'local' === $namespace;
 
         $config = $this->config->get($namespace);
         Assert::isEmpty($config, "Namespace {$namespace} already exists");
 
         $server = [];
 
+        $server['ip'] = '127.0.0.1';
+        $server['ssh_user'] = null;
+        $server['ssh_port'] = null;
+        $server['ssh_key_path'] = null;
         $server['role'] = 'manager';
-        $server['ip'] = $io->askQuestion(new Question('Please enter your server ip: ', '127.0.0.1'));
-        $server['ssh_user'] = $io->askQuestion(new Question('Please enter manager ssh user:', 'root'));
-        $server['ssh_port'] = (int) $io->askQuestion(new Question('Please enter manager ssh port:', 22));
-        $server['ssh_key_path'] = $io->askQuestion(new Question('Please enter manager ssh key path:', '~/.ssh/id_rsa'));
-        $proxyDashboard = $io->askQuestion(new Question('Please enter proxy dashboard url:', 'dashboard.traefik.wip'));
-        $proxyUser = $io->askQuestion(new Question('Please enter proxy user:', 'admin'));
-        $proxyPassword = $io->askQuestion(new Question('Please enter proxy password:', 'admin123'));
+        $proxyDashboard = 'dashboard.traefik.wip';
+        $proxyUser = 'admin';
+        $proxyPassword = 'admin123';
+
+        if (!$isLocal) {
+            $server['role'] = 'manager';
+            $server['ip'] = $io->askQuestion(new Question('Please enter your server ip: ', '127.0.0.1'));
+            $server['ssh_user'] = $io->askQuestion(new Question('Please enter manager ssh user:', 'root'));
+            $server['ssh_port'] = (int) $io->askQuestion(new Question('Please enter manager ssh port:', 22));
+            $server['ssh_key_path'] = $io->askQuestion(new Question('Please enter manager ssh key path:', '~/.ssh/id_rsa'));
+            $proxyDashboard = $io->askQuestion(new Question('Please enter proxy dashboard url:', 'dashboard.traefik.wip'));
+            $proxyUser = $io->askQuestion(new Question('Please enter proxy user:', 'admin'));
+            $proxyPassword = $io->askQuestion(new Question('Please enter proxy password:', 'admin123'));
+        }
 
         $servers = [];
         $servers[] = $server;
@@ -61,11 +73,13 @@ final class NamespaceAddCommand extends Command
         $this->config->set("{$namespace}.proxy_dashboard", $proxyDashboard);
         $this->config->set("{$namespace}.proxy_user", $proxyUser);
         $this->config->set("{$namespace}.proxy_password", Encryption::Htpasswd($proxyPassword));
-        $this->config->set("{$namespace}.is_local", false);
+        $this->config->set("{$namespace}.is_local", $isLocal);
         $this->config->set("{$namespace}.network", "{$namespace}-main");
         $this->config->set("{$namespace}.is_single_node", true);
 
         $this->config->save();
+
+        \Amp\File\touch(getenv('HOME') . '/.mager/dynamic.yaml');
 
         $io->success('Namespace successfully added!');
 

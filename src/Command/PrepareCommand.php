@@ -37,9 +37,8 @@ final class PrepareCommand extends Command
     {
         $this->addArgument(
             'namespace',
-            InputArgument::OPTIONAL,
+            InputArgument::REQUIRED,
             'Prepare servers that listed for given namespace',
-            'local',
         );
     }
 

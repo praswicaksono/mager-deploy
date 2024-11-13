@@ -58,4 +58,18 @@ final class CommandHelper
         yield "rm -f /tmp/{$namespace}-{$imageName}.tar.gz";
         yield 'docker image prune -a';
     }
+
+    public static function ensureServerArePrepared(string $namespace): \Generator
+    {
+        $node = yield 'docker node ls';
+        if (empty($node)) {
+            return false;
+        }
+
+        if (empty(yield CommandHelper::isServiceRunning($namespace, 'mager_proxy'))) {
+            return false;
+        }
+
+        return true;
+    }
 }
