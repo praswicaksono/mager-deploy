@@ -21,7 +21,7 @@ final class CommandHelper
         $uid = trim(yield 'id -u');
         $guid = trim(yield 'id -g');
 
-        yield DockerCreateService::create($namespace, 'generate-tls-cert', 'dcagatay/mkcert')
+        yield "Generating TLS Certificate for {$domain}" => DockerCreateService::create($namespace, 'generate-tls-cert', 'dcagatay/mkcert')
             ->withMounts([
                 "type=bind,source={$path},destination=/certs",
             ])
@@ -47,7 +47,7 @@ final class CommandHelper
     {
         $fullServiceName = "{$namespace}-{$name}";
 
-        yield sprintf(
+        yield "Removing {$fullServiceName} Container" => sprintf(
             'docker service rm `docker service ls --format "{{.ID}}" --filter name=%s --filter mode=%s`',
             $fullServiceName,
             $mode,
@@ -56,20 +56,22 @@ final class CommandHelper
 
     public static function transferAndLoadImage(string $namespace, string $imageName): \Generator
     {
-        yield "upload /tmp/{$namespace}-{$imageName}.tar.gz:/tmp/{$namespace}-{$imageName}.tar.gz";
-        yield "docker load < /tmp/{$namespace}-{$imageName}.tar.gz";
-        yield "rm -f /tmp/{$namespace}-{$imageName}.tar.gz";
-        yield 'docker image prune -a';
+        yield <<<CMD
+            upload /tmp/{$namespace}-{$imageName}.tar.gz:/tmp/{$namespace}-{$imageName}.tar.gz
+            docker load < /tmp/{$namespace}-{$imageName}.tar.gz
+            rm -f /tmp/{$namespace}-{$imageName}.tar.gz
+            docker image prune -a
+        CMD;
     }
 
     public static function ensureServerArePrepared(string $namespace): \Generator
     {
-        $node = yield 'docker node ls';
+        $node = yield 'Checking Docker Swarm' => 'docker node ls';
         if (empty($node)) {
             return false;
         }
 
-        if (empty(yield CommandHelper::isServiceRunning($namespace, 'mager_proxy'))) {
+        if (empty(yield 'Checking Traefik Proxy' => CommandHelper::isServiceRunning($namespace, 'mager_proxy'))) {
             return false;
         }
 

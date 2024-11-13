@@ -20,6 +20,7 @@ class LocalRunner implements RunnerInterface
     {
         while ($tasks->valid()) {
             $task = $tasks->current();
+            $label = $tasks->key();
 
             $cmd = $task;
             if ($task instanceof TaskInterface) {
@@ -29,9 +30,9 @@ class LocalRunner implements RunnerInterface
             $process = $this->exec($cmd);
 
             $progress = null;
-            if ($showProgress) {
+            if ($showProgress && is_string($label)) {
                 $progress = new ProgressIndicator($this->io);
-                $progress->start('Task Running...');
+                $progress->start($label);
             }
 
             try {
@@ -55,7 +56,7 @@ class LocalRunner implements RunnerInterface
             }
 
             if ($showProgress && null !== $progress) {
-                $progress->finish('Task Completed ✔️');
+                $progress->finish("{$label} ✔️");
                 $this->io->writeln('');
             }
 

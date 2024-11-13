@@ -76,7 +76,7 @@ final class PrepareCommand extends Command
 
         if (empty($nodes)) {
             $this->io->section('Init docker swarm');
-            yield "docker swarm init --advertise-addr {$serverConfig->ip}";
+            yield 'Init Docker Swarm' => "docker swarm init --advertise-addr {$serverConfig->ip}";
         }
     }
 
@@ -84,14 +84,12 @@ final class PrepareCommand extends Command
     {
         $this->io->section('Creating namespace scoped network');
 
-        yield "docker network create --scope=swarm -d overlay {$namespace}-main";
+        yield 'Create Main Network' => "docker network create --scope=swarm -d overlay {$namespace}-main";
     }
 
     private function prepareProxy(string $namespace): \Generator
     {
         $isLocal = 'local' === $namespace;
-
-        $this->io->section('Checking if traefik proxy is running');
 
         if (!empty(yield CommandHelper::isServiceRunning($namespace, 'mager_proxy'))) {
             $this->io->warning("Traefik proxy already running for {$namespace} namespace");
@@ -172,7 +170,7 @@ final class PrepareCommand extends Command
 
         $this->io->section('Installing traefik proxy');
 
-        yield DockerCreateService::create($namespace, 'mager_proxy', 'traefik:v3.2')
+        yield 'Deploying Traefik Proxy' => DockerCreateService::create($namespace, 'mager_proxy', 'traefik:v3.2')
             ->withNetworks(["{$namespace}-main", 'host'])
             ->withConstraints(['node.role==manager'])
             ->withPortPublish(['80:80', '443:443/tcp', '443:443/udp'])

@@ -134,10 +134,10 @@ final class BuildCommand extends Command
             $build .= ' --output registry';
         }
 
-        yield $build . ' .';
+        yield "Building {$imageName}" => $build . ' .';
 
         if ($save && !$this->config->isLocal($namespace)) {
-            yield "docker save {$imageName} | gzip > /tmp/{$namespace}-{$name}.tar.gz";
+            yield "Dump and Compress {$imageName} Image" => "docker save {$imageName} | gzip > /tmp/{$namespace}-{$name}.tar.gz";
         }
 
 

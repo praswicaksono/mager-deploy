@@ -55,8 +55,8 @@ final class NamespaceDelCommand extends Command
             return Command::FAILURE;
         }
 
-        yield sprintf('docker service rm `docker service ls --format "{{.ID}}" --filter name=%s-`', $namespace);
-        yield sprintf('docker network rm `docker network ls --format "{{.ID}}" --filter name=%s-main`', $namespace);
+        yield 'Removing Services' => sprintf('docker service rm `docker service ls --format "{{.ID}}" --filter name=%s-`', $namespace);
+        yield 'Removing Network' => sprintf('docker network rm `docker network ls --format "{{.ID}}" --filter name=%s-main`', $namespace);
 
         $this->config->delete($namespace)->save();
 

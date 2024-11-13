@@ -107,9 +107,9 @@ final class DeployCommand extends Command
             $version = runLocally(function () {
                 // try to look github sha commit first
                 $version = getenv('GITHUB_SHA');
-                $version = false !== $version ? $version : yield 'git rev-parse HEAD';
+                $version = false !== $version ? $version : trim(yield 'git rev-parse HEAD');
 
-                return $version ?? 'latest';
+                return empty($version) ? 'latest' : $version;
             }, throwError: false);
         }
 
@@ -147,15 +147,17 @@ final class DeployCommand extends Command
          * @var Service $service
          */
         foreach ($definition->services as $service) {
-            $this->io->section("Executing Before Deploy Hooks {$service->name}");
-            foreach ($service->beforeDeploy as $job) {
-                runOnManager(fn() => $this->runJob(
-                    job: $job,
-                    namespace: $namespace,
-                    imageName: $imageName,
-                    serviceName: $service->name,
-                    service: $service,
-                ), $namespace);
+            if (!empty($service->beforeDeploy)) {
+                $this->io->section("Executing Before Deploy Hooks {$service->name}");
+                foreach ($service->beforeDeploy as $job) {
+                    runOnManager(fn() => $this->runJob(
+                        job: $job,
+                        namespace: $namespace,
+                        imageName: $imageName,
+                        serviceName: "{$definition->name}-{$service->name}",
+                        service: $service,
+                    ), $namespace);
+                }
             }
 
             if (null !== $service->proxy->rule && $isLocal) {
@@ -166,20 +168,22 @@ final class DeployCommand extends Command
             runOnManager(fn() => $this->deploy(
                 namespace: $namespace,
                 imageName: $imageName,
-                serviceName: $service->name,
+                serviceName: "{$definition->name}-{$service->name}",
                 service: $service,
                 isLocal: $isLocal,
             ), $namespace);
 
-            $this->io->section("Executing After Deploy Hooks {$service->name}");
-            foreach ($service->afterDeploy as $job) {
-                runOnManager(fn() => $this->runJob(
-                    job: $job,
-                    namespace: $namespace,
-                    imageName: $imageName,
-                    serviceName: $service->name,
-                    service: $service,
-                ), $namespace);
+            if (!empty($service->afterDeploy)) {
+                $this->io->section("Executing After Deploy Hooks {$service->name}");
+                foreach ($service->afterDeploy as $job) {
+                    runOnManager(fn() => $this->runJob(
+                        job: $job,
+                        namespace: $namespace,
+                        imageName: $imageName,
+                        serviceName: "{$definition->name}-{$service->name}",
+                        service: $service,
+                    ), $namespace);
+                }
             }
         }
 
@@ -207,7 +211,7 @@ final class DeployCommand extends Command
         $rand = bin2hex(random_bytes(8));
         $name = "{$serviceName}-job-{$rand}";
 
-        yield DockerCreateService::create($namespace, $name, $imageName)
+        yield "Executing {$job}" => DockerCreateService::create($namespace, $name, $imageName)
             ->withMode('replicated-job')
             ->withConstraints($constraint)
             ->withNetworks($network)
@@ -225,10 +229,12 @@ final class DeployCommand extends Command
         Service $service,
         bool $isLocal,
     ): \Generator {
+        $fullServiceName = "{$namespace}-{$serviceName}";
+
         // just update image if service exists
         // TODO: update other configuration like cpu, labels, mount, ram
         if (yield CommandHelper::isServiceRunning($namespace, $serviceName)) {
-            yield "docker service update --image {$imageName} --force {$namespace}-{$serviceName}";
+            yield "Deploying {$fullServiceName}" => "docker service update --image {$imageName} --force {$namespace}-{$serviceName}";
 
             return;
         }
@@ -260,7 +266,6 @@ final class DeployCommand extends Command
         $labels[] = 'traefik.docker.lbswarm=true';
         $labels[] = 'traefik.enable=true';
 
-        $fullServiceName = "{$namespace}-{$serviceName}";
         if (null !== $service->proxy->rule) {
             $rule = str_replace('{$host}', $service->proxy->host, $service->proxy->rule);
 
@@ -280,7 +285,7 @@ final class DeployCommand extends Command
             $labels[] = HttpHelper::certResolver($fullServiceName);
         }
 
-        yield DockerCreateService::create($namespace, $serviceName, $imageName)
+        yield "Deploying {$fullServiceName}" => DockerCreateService::create($namespace, $serviceName, $imageName)
             ->withConstraints($constraint)
             ->withNetworks($network)
             ->withEnvs($service->resolveEnvValue())

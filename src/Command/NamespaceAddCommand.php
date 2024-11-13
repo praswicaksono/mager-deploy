@@ -79,7 +79,9 @@ final class NamespaceAddCommand extends Command
 
         $this->config->save();
 
-        \Amp\File\touch(getenv('HOME') . '/.mager/dynamic.yaml');
+        if ($isLocal) {
+            \Amp\File\touch(getenv('HOME') . '/.mager/dynamic.yaml');
+        }
 
         $io->success('Namespace successfully added!');
 
