@@ -34,7 +34,7 @@ final class DevCommand extends Command
             $this->getApplication()->doRun($addNamespace, $output);
         }
 
-        if (! runLocally(fn() => CommandHelper::ensureServerArePrepared('local'))) {
+        if (! runLocally(fn() => CommandHelper::ensureServerArePrepared('local'), throwError: false)) {
             $prepare = new ArrayInput([
                 'command' => 'prepare',
                 'namespace' => 'local',

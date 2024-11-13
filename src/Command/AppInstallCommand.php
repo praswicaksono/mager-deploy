@@ -136,7 +136,9 @@ final class AppInstallCommand extends Command
 
             $this->getApplication()->doRun($build, $this->io);
             $image = "{$namespace}-{$appDefinition->name}:latest";
-            yield from CommandHelper::transferAndLoadImage($namespace, $image, $this->config->isLocal($namespace));
+            if (! $this->config->isLocal($namespace)) {
+                yield from CommandHelper::transferAndLoadImage($namespace, $image);
+            }
         }
 
         // Create docker config

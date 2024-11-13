@@ -136,7 +136,7 @@ final class BuildCommand extends Command
 
         yield $build . ' .';
 
-        if ($save) {
+        if ($save && !$this->config->isLocal($namespace)) {
             yield "docker save {$imageName} | gzip > /tmp/{$namespace}-{$name}.tar.gz";
         }
 

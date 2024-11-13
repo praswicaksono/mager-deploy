@@ -53,6 +53,8 @@ final class DockerCreateService implements TaskInterface
 
     private ?string $stopSignal = null;
 
+    private ?string $user = null;
+
     private int $replicas = 1;
 
     private string $namespace;
@@ -212,6 +214,14 @@ final class DockerCreateService implements TaskInterface
         return $self;
     }
 
+    public function withUser(string $user): self
+    {
+        $self = clone $this;
+        $self->user = $user;
+
+        return $self;
+    }
+
     /**
      * @param string[] $configs
      */
@@ -294,6 +304,10 @@ final class DockerCreateService implements TaskInterface
 
         if (null !== $this->stopSignal) {
             $cmd[] = "--stop-signal {$this->stopSignal}";
+        }
+
+        if (null !== $this->user) {
+            $cmd[] = "--user {$this->user}";
         }
 
         $cmd[] = "--name {$this->namespace}-{$this->name}";

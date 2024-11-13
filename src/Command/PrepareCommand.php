@@ -57,10 +57,10 @@ final class PrepareCommand extends Command
         }
 
         $this->io->title('Preparing Docker Swarm');
-        runOnManager(fn() => $this->prepareDockerSwarm($serverConfig), $namespace);
+        runOnManager(fn() => $this->prepareDockerSwarm($serverConfig), $namespace, throwError: false);
 
         $this->io->title('Preparing Docker Swarm Network');
-        runOnManager(fn() => $this->prepareNetwork($namespace), $namespace);
+        runOnManager(fn() => $this->prepareNetwork($namespace), $namespace, throwError: false);
 
         $this->io->title('Installing Proxy');
         runOnManager(fn() => $this->prepareProxy($namespace), $namespace);
@@ -72,11 +72,10 @@ final class PrepareCommand extends Command
 
     private function prepareDockerSwarm(ServerConfig $serverConfig): \Generator
     {
-        $this->io->section('Init docker swarm');
-
         $nodes = yield 'docker node ls --format {{.ID}}';
 
         if (empty($nodes)) {
+            $this->io->section('Init docker swarm');
             yield "docker swarm init --advertise-addr {$serverConfig->ip}";
         }
     }
@@ -150,9 +149,9 @@ final class PrepareCommand extends Command
         if ($isLocal) {
             $this->io->section('Generate local TLS certificates with mkcerts');
 
-            yield CommandHelper::generateTlsCertificateLocally($namespace, $proxyDomain);
+            yield from CommandHelper::generateTlsCertificateLocally($namespace, $proxyDomain);
             ConfigHelper::registerTLSCertificateLocally($proxyDomain);
-            yield CommandHelper::removeService($namespace, 'generate-tls-cert', 'replicated-job');
+            yield from CommandHelper::removeService($namespace, 'generate-tls-cert', 'replicated-job');
         }
 
         $home = getenv('HOME');

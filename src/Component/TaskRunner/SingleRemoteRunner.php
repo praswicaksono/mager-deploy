@@ -35,6 +35,8 @@ final class SingleRemoteRunner extends LocalRunner implements RunnerInterface
     {
         [$src, $dest] = explode(':', $arg);
 
-        return $ssh->upload($src, $dest);
+        $cmd = $ssh->getUploadCommand($src, $dest);
+
+        return parent::exec($cmd);
     }
 }

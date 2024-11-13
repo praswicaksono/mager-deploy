@@ -92,7 +92,7 @@ final class DeployCommand extends Command
         $definition = $this->definitionBuilder->build(override: $override);
 
         $this->io->title('Checking Requirement');
-        if (! runOnManager(fn() => CommandHelper::ensureServerArePrepared($namespace), $namespace)) {
+        if (! runOnManager(fn() => CommandHelper::ensureServerArePrepared($namespace), $namespace, throwError: false)) {
             $this->io->error("Please run 'mager prepare {$namespace}' first");
 
             return Command::FAILURE;
@@ -117,23 +117,29 @@ final class DeployCommand extends Command
             $this->io->warning('VERSION environment variable is not detected, using latest as image tag');
         }
 
-        // Build target image
-        $build = new ArrayInput([
-            'command' => 'build',
-            '--namespace' => $namespace,
-            '--target' => $definition->build->target,
-            '--file' => $definition->build->dockerfile,
-            '--name' => $definition->name,
-            '--build' => $version,
-            '--save' => null,
-        ]);
+        $imageName = $definition->build->image;
 
-        $imageName = "{$namespace}-{$definition->name}:{$version}";
+        if (null === $imageName) {
+            // Build target image
+            $build = new ArrayInput([
+                'command' => 'build',
+                '--namespace' => $namespace,
+                '--target' => $definition->build->target,
+                '--file' => $definition->build->dockerfile,
+                '--name' => $definition->name,
+                '--build' => $version,
+                '--save' => null,
+            ]);
 
-        $this->getApplication()->doRun($build, $output);
+            $imageName = "{$namespace}-{$definition->name}:{$version}";
 
-        $this->io->title('Transfer and Load Image');
-        runOnManager(fn() => CommandHelper::transferAndLoadImage($namespace, $definition->name, $this->config->isLocal($namespace)), $namespace);
+            $this->getApplication()->doRun($build, $output);
+        }
+
+        if (! $this->config->isLocal($namespace)) {
+            $this->io->title('Transfer and Load Image');
+            runOnManager(fn() => CommandHelper::transferAndLoadImage($namespace, $definition->name), $namespace);
+        }
 
         $this->io->title('Deploying Service');
         $isLocal = $this->config->get("{$namespace}.is_local");
@@ -209,7 +215,7 @@ final class DeployCommand extends Command
             ->withRestartCondition('none')
             ->withEnvs($service->env);
 
-        yield CommandHelper::removeService($namespace, $name, 'replicated-job');
+        yield from CommandHelper::removeService($namespace, $name, 'replicated-job');
     }
 
     private function deploy(
@@ -293,8 +299,8 @@ final class DeployCommand extends Command
     private function setupTls(string $namespace, Service $service): \Generator
     {
         $this->io->section("Generate TLS Certificate for {$service->proxy->host}");
-        yield CommandHelper::generateTlsCertificateLocally($namespace, $service->proxy->host);
+        yield from CommandHelper::generateTlsCertificateLocally($namespace, $service->proxy->host);
         ConfigHelper::registerTLSCertificateLocally($service->proxy->host);
-        yield CommandHelper::removeService($namespace, 'generate-tls-cert', 'replicated-job');
+        yield from CommandHelper::removeService($namespace, 'generate-tls-cert', 'replicated-job');
     }
 }

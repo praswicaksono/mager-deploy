@@ -76,7 +76,7 @@ class LocalRunner implements RunnerInterface
         $process = Process::fromShellCommandline($cmd);
 
         $process->setTimeout(60 * 30);
-        $process->setIdleTimeout(60);
+        $process->setIdleTimeout(60 * 30);
         $process->start();
 
         return $process;

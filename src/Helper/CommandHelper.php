@@ -11,22 +11,28 @@ use function Amp\File\isDirectory;
 
 final class CommandHelper
 {
-    public static function generateTlsCertificateLocally(string $namespace, string $domain): DockerCreateService
+    public static function generateTlsCertificateLocally(string $namespace, string $domain): \Generator
     {
         $path = getenv('HOME') . '/.mager/certs';
         if (!isDirectory($path)) {
             createDirectory($path, 0755);
         }
 
-        return DockerCreateService::create($namespace, 'generate-tls-cert', 'alpine/mkcert')
+        $uid = trim(yield 'id -u');
+        $guid = trim(yield 'id -g');
+
+        yield DockerCreateService::create($namespace, 'generate-tls-cert', 'dcagatay/mkcert')
             ->withMounts([
-                "type=bind,source={$path},destination=/root/.local/share/mkcert",
+                "type=bind,source={$path},destination=/certs",
             ])
             ->withLabels([
                 'traefik.enable=false',
             ])
             ->withMode('replicated-job')
-            ->withWorkdir('/root/.local/share/mkcert')
+            ->withEnvs([
+                "UID={$uid}",
+                "GID={$guid}",
+            ])
             ->withCommand($domain);
     }
 
@@ -37,23 +43,20 @@ final class CommandHelper
         return sprintf('docker service ls --format "{{.ID}}" --filter name=%s --filter mode=%s', $fullServiceName, $mode);
     }
 
-    public static function removeService(string $namespace, string $name, string $mode = 'replicated'): string
+    public static function removeService(string $namespace, string $name, string $mode = 'replicated'): \Generator
     {
         $fullServiceName = "{$namespace}-{$name}";
 
-        return sprintf(
+        yield sprintf(
             'docker service rm `docker service ls --format "{{.ID}}" --filter name=%s --filter mode=%s`',
             $fullServiceName,
             $mode,
         );
     }
 
-    public static function transferAndLoadImage(string $namespace, string $imageName, bool $isLocal): \Generator
+    public static function transferAndLoadImage(string $namespace, string $imageName): \Generator
     {
-        if (!$isLocal) {
-            yield "upload /tmp/{$namespace}-{$imageName}.tar.gz:/tmp/{$namespace}-{$imageName}.tar.gz";
-        }
-
+        yield "upload /tmp/{$namespace}-{$imageName}.tar.gz:/tmp/{$namespace}-{$imageName}.tar.gz";
         yield "docker load < /tmp/{$namespace}-{$imageName}.tar.gz";
         yield "rm -f /tmp/{$namespace}-{$imageName}.tar.gz";
         yield 'docker image prune -a';

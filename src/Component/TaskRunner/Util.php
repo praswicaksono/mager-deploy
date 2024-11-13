@@ -8,6 +8,7 @@ use App\Component\Config\Data\Server;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Spatie\Ssh\Ssh;
+use Symfony\Component\Process\Process;
 
 final class Util
 {
@@ -64,6 +65,9 @@ final class Util
             ->disableStrictHostKeyChecking()
             ->disablePasswordAuthentication()
             ->useMultiplexing("/tmp/{$server->user}-{$server->ip}-%C")
+            ->configureProcess(function (Process $process) {
+                $process->setIdleTimeout(60 * 30);
+            })
             ->setTimeout(60 * 30);
     }
 }
