@@ -30,6 +30,10 @@ class Kernel extends BaseKernel
             $this->projectDir = $dir;
         }
 
+        if ($this->projectDir === '.') {
+            $this->projectDir = \dirname(__DIR__);
+        }
+
         return $this->projectDir;
     }
 }
