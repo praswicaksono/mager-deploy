@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Component\Config\Config;
-use App\Component\TaskRunner\RunnerBuilder;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -43,14 +42,9 @@ final class NamespaceDelCommand extends Command
         $config = $this->config->get($namespace);
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
-        $r = RunnerBuilder::create()
-            ->withIO($this->io)
-            ->withConfig($this->config)
-            ->build($namespace);
-
         $this->io->title("Removing namespace {$namespace} and associated services");
 
-        return $r->run($this->removeAllAssociatedServices($namespace));
+        return runOnManager(fn() => $this->removeAllAssociatedServices($namespace), $namespace);
     }
 
     private function removeAllAssociatedServices(string $namespace): \Generator

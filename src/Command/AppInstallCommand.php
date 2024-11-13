@@ -8,7 +8,6 @@ use App\Component\Config\AppDefinition;
 use App\Component\Config\Config;
 use App\Component\Config\Definition\ProxyPort;
 use App\Component\Config\YamlAppServiceDefinitionBuilder;
-use App\Component\TaskRunner\RunnerBuilder;
 use App\Component\TaskRunner\TaskBuilder\DockerCreateService;
 use App\Helper\CommandHelper;
 use App\Helper\HttpHelper;
@@ -25,7 +24,7 @@ use function Amp\File\exists;
 
 #[AsCommand(
     name: 'app:install',
-    description: 'Install 3rd party apps',
+    description: 'Install third party apps',
 )]
 final class AppInstallCommand extends Command
 {
@@ -42,13 +41,13 @@ final class AppInstallCommand extends Command
         $this->addArgument(
             'namespace',
             InputArgument::REQUIRED,
-            'Deploy service to servers that listed for given namespace',
+            'Namespace',
         );
 
         $this->addArgument(
             'url',
             InputArgument::REQUIRED,
-            'URL package for 3rd party apps',
+            'URL package for third party apps',
         );
     }
 
@@ -61,12 +60,7 @@ final class AppInstallCommand extends Command
 
         // TODO: verify namespace
 
-        $r = RunnerBuilder::create()
-            ->withIO($this->io)
-            ->withConfig($this->config)
-            ->build($namespace);
-
-        $cwd = $r->run($this->resolvePackage($namespace, $url));
+        $cwd = runLocally(fn() => $this->resolvePackage($namespace, $url), $namespace);
 
         if (! exists($cwd . '/mager.yaml')) {
             throw new \InvalidArgumentException("Cant find 'mager.yaml' in '$cwd'");
@@ -76,11 +70,11 @@ final class AppInstallCommand extends Command
         /** @var AppDefinition $appDefinition */
         $appDefinition = $appDefinitionBuilder->build($cwd . '/mager.yaml');
 
-        if (($code = $r->run($this->deploy($namespace, $cwd, $appDefinition))) === Command::FAILURE) {
+        if (($code = runOnManager(fn() => $this->deploy($namespace, $cwd, $appDefinition), $namespace)) === Command::FAILURE) {
             return $code;
         }
 
-        $this->config->set("{$namespace}.apps.{$url}", true);
+        $this->config->set("{$namespace}.apps.{$appDefinition->name}", $url);
         $this->config->save();
 
         return $code;

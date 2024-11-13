@@ -23,18 +23,17 @@ final class SingleRemoteRunner extends LocalRunner implements RunnerInterface
     {
         $ssh = Util::createSshConnection($this->server);
 
-        [$cmd] = explode(' ', $cmd, 1);
+        @[$customCommand, $arg] = explode(' ', $cmd);
 
         return match (true) {
-            'upload' === $cmd => $this->upload($ssh, $cmd),
+            'upload' === $customCommand => $this->upload($ssh, $arg),
             default => $ssh->executeAsync($cmd),
         };
     }
 
-    private function upload(Ssh $ssh, string $cmd): Process
+    private function upload(Ssh $ssh, string $arg): Process
     {
-        [, $arguments] = explode(' ', $cmd);
-        [$src, $dest] = explode(':', $arguments);
+        [$src, $dest] = explode(':', $arg);
 
         return $ssh->upload($src, $dest);
     }

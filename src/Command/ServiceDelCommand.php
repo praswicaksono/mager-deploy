@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Component\Config\Config;
-use App\Component\TaskRunner\RunnerBuilder;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -46,12 +45,7 @@ final class ServiceDelCommand extends Command
 
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
-        $r = RunnerBuilder::create()
-            ->withIO($this->io)
-            ->withConfig($this->config)
-            ->build($namespace);
-
-        return $r->run($this->deleteService($namespace, $name), showProgress: false);
+        return runOnManager(fn() => $this->deleteService($namespace, $name), $namespace, showProgress: false);
     }
 
     private function deleteService(string $namespace, string $name): \Generator

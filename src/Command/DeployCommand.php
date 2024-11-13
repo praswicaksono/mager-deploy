@@ -9,7 +9,6 @@ use App\Component\Config\Definition\ProxyPort;
 use App\Component\Config\Definition\Service;
 use App\Component\Config\DefinitionBuilder;
 use App\Component\Config\ServiceDefinition;
-use App\Component\TaskRunner\RunnerBuilder;
 use App\Component\TaskRunner\TaskBuilder\DockerCreateService;
 use App\Helper\CommandHelper;
 use App\Helper\ConfigHelper;
@@ -32,6 +31,10 @@ final class DeployCommand extends Command
 {
     private SymfonyStyle $io;
 
+    private bool $isPreview = false;
+
+    private bool $isDev = false;
+
     public function __construct(
         private readonly Config $config,
         private readonly DefinitionBuilder $definitionBuilder,
@@ -45,14 +48,20 @@ final class DeployCommand extends Command
             'namespace',
             InputArgument::OPTIONAL,
             'Deploy service to servers that listed for given namespace',
-            'local',
         );
 
         $this->addOption(
             'dev',
             null,
             InputOption::VALUE_NONE,
-            'Setup for mager for local development include proxy auto configuration',
+            'Deploy service to local namespace',
+        );
+
+        $this->addOption(
+            'preview',
+            null,
+            InputOption::VALUE_NONE,
+            'Deploy service to preview environment',
         );
     }
 
@@ -61,7 +70,19 @@ final class DeployCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
 
         $namespace = $input->getArgument('namespace');
-        $override = $input->getOption('dev') ? 'dev' : 'prod';
+        $this->isDev = $input->getOption('dev') ?? false;
+        $this->isPreview = $input->getOption('preview') ?? false;
+
+        $override = 'prod';
+        if ($this->isPreview) {
+            Assert::eq($namespace, 'local', "Deploy preview require non-local namespace");
+            $override = 'preview';
+        }
+
+        if ($this->isDev) {
+            $namespace = 'local';
+            $override = 'dev';
+        }
 
         $config = $this->config->get($namespace);
 
@@ -70,18 +91,28 @@ final class DeployCommand extends Command
         /** @var ServiceDefinition $definition */
         $definition = $this->definitionBuilder->build(override: $override);
 
-        $r = RunnerBuilder::create()
-            ->withIO($this->io)
-            ->withConfig($this->config)
-            ->build($namespace);
-
         $this->io->title('Checking Requirement');
-        if (! $r->run($this->ensureServerArePrepared($namespace))) {
+        if (! runOnManager(fn() => $this->ensureServerArePrepared($namespace), $namespace)) {
             return Command::FAILURE;
         }
 
-        $version = getenv('APP_VERSION');
+        $this->io->title('Building Image');
+
+        $version = getenv('VERSION');
         $version = false === $version ? 'latest' : $version;
+
+        if ($this->isPreview && $version !== 'latest') {
+            $version = runLocally(function() {
+                // try to look github sha commit first
+                $version = getenv('GITHUB_SHA');
+                $version = $version !== false ? $version : yield 'git rev-parse HEAD';
+                return $version ?? 'latest';
+            }, throwError: false);
+        }
+
+        if ($version === 'latest') {
+            $this->io->warning('VERSION environment variable is not detected, using latest as image tag');
+        }
 
         // Build target image
         $build = new ArrayInput([
@@ -99,7 +130,7 @@ final class DeployCommand extends Command
         $this->getApplication()->doRun($build, $output);
 
         $this->io->title('Transfer and Load Image');
-        $r->run(CommandHelper::transferAndLoadImage($namespace, $definition->name, $this->config->isLocal($namespace)));
+        runOnManager(fn() => CommandHelper::transferAndLoadImage($namespace, $definition->name, $this->config->isLocal($namespace)), $namespace);
 
         $this->io->title('Deploying Service');
         $isLocal = $this->config->get("{$namespace}.is_local");
@@ -109,37 +140,37 @@ final class DeployCommand extends Command
         foreach ($definition->services as $service) {
             $this->io->section("Executing Before Deploy Hooks {$service->name}");
             foreach ($service->beforeDeploy as $job) {
-                $r->run($this->runJob(
+                runOnManager(fn() => $this->runJob(
                     job: $job,
                     namespace: $namespace,
                     imageName: $imageName,
                     serviceName: $service->name,
                     service: $service,
-                ));
+                ), $namespace);
             }
 
             if (null !== $service->proxy->rule && $isLocal) {
-                $r->run($this->setupTls($namespace, $service));
+                runLocally(fn() => $this->setupTls($namespace, $service));
             }
 
             $this->io->section("Deploying {$service->name}");
-            $r->run($this->deploy(
+            runOnManager(fn() => $this->deploy(
                 namespace: $namespace,
                 imageName: $imageName,
                 serviceName: $service->name,
                 service: $service,
                 isLocal: $isLocal,
-            ));
+            ), $namespace);
 
             $this->io->section("Executing After Deploy Hooks {$service->name}");
             foreach ($service->afterDeploy as $job) {
-                $r->run($this->runJob(
+                runOnManager(fn() => $this->runJob(
                     job: $job,
                     namespace: $namespace,
                     imageName: $imageName,
                     serviceName: $service->name,
                     service: $service,
-                ));
+                ), $namespace);
             }
         }
 

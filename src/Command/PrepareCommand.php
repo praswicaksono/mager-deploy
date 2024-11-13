@@ -6,7 +6,6 @@ namespace App\Command;
 
 use App\Component\Config\Config;
 use App\Component\Config\Data\Server as ServerConfig;
-use App\Component\TaskRunner\RunnerBuilder;
 use App\Component\TaskRunner\TaskBuilder\DockerCreateService;
 use App\Helper\CommandHelper;
 use App\Helper\ConfigHelper;
@@ -58,19 +57,14 @@ final class PrepareCommand extends Command
             return Command::FAILURE;
         }
 
-        $r = RunnerBuilder::create()
-            ->withIO($this->io)
-            ->withConfig($this->config)
-            ->build($namespace);
-
         $this->io->title('Preparing Docker Swarm');
-        $r->run($this->prepareDockerSwarm($serverConfig));
+        runOnManager(fn() => $this->prepareDockerSwarm($serverConfig), $namespace);
 
         $this->io->title('Preparing Docker Swarm Network');
-        $r->run($this->prepareNetwork($namespace), throwError: false);
+        runOnManager(fn() => $this->prepareNetwork($namespace), $namespace);
 
         $this->io->title('Installing Proxy');
-        $r->run($this->prepareProxy($namespace));
+        runOnManager(fn() => $this->prepareProxy($namespace), $namespace);
 
         $this->io->success('Namespace Was Successfully Prepared');
 

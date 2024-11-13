@@ -33,7 +33,10 @@
     "autoload": {
         "psr-4": {
             "App\\": "src/"
-        }
+        },
+        "files": [
+            "helpers/functions.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

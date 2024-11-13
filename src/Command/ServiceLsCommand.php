@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Component\Config\Config;
-use App\Component\TaskRunner\RunnerBuilder;
 use App\Component\TaskRunner\Util;
 use App\Entity\DockerService;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -50,13 +49,7 @@ final class ServiceLsCommand extends Command
         Assert::notEmpty($namespace, '--namespace must be a non-empty string');
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager mager:init --namespace {$namespace}");
 
-        $r = RunnerBuilder::create()
-            ->withIO($this->io)
-            ->withConfig($this->config)
-            ->build($namespace);
-
-        $r->run($this->listServices($namespace), showProgress: false, throwError: false);
-
+        runOnManager(fn() => $this->listServices($namespace), on: $namespace, showProgress: false, throwError: false);
         return Command::SUCCESS;
     }
 

@@ -65,7 +65,7 @@ final class RunnerBuilder
         return $self;
     }
 
-    public function build(string $namespace, bool $local = false, bool $managerOnly = true): RunnerInterface
+    public function build(string $namespace, bool $local = false): RunnerInterface
     {
         if ($local) {
             return new LocalRunner($this->io);

@@ -31,7 +31,6 @@ class LocalRunner implements RunnerInterface
             $progress = null;
             if ($showProgress) {
                 $progress = new ProgressIndicator($this->io);
-                $this->io->info($process->getCommandLine());
                 $progress->start('Task Running...');
             }
 
@@ -57,6 +56,7 @@ class LocalRunner implements RunnerInterface
 
             if ($showProgress && null !== $progress) {
                 $progress->finish('Task Completed ✔️');
+                $this->io->writeln('');
             }
 
             $output = $process->getOutput();

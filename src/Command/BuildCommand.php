@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Component\Config\Config;
-use App\Component\TaskRunner\RunnerBuilder;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -97,11 +96,6 @@ final class BuildCommand extends Command
         Assert::notEmpty($name, '--name must be a non-empty string');
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
-        $r = RunnerBuilder::create()
-            ->withIO($this->io)
-            ->withConfig($this->config)
-            ->build($namespace, local: true);
-
         if (! exists($dockerfile)) {
             $this->io->error('Dockerfile does not exist');
 
@@ -110,7 +104,7 @@ final class BuildCommand extends Command
 
         $imageName = "{$namespace}-{$name}:{$version}";
 
-        return $r->run($this->buildAndSaveImage(
+        return runLocally(fn() => $this->buildAndSaveImage(
             $namespace,
             $dockerfile,
             $imageName,
