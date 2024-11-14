@@ -45,8 +45,8 @@ final class YamlServiceDefinitionBuilder implements DefinitionBuilder
             );
 
             $option = new Option(
-                limitCpu: $service['option']['limitCpu'] ?? null,
-                limitMemory: $service['option']['limitMemory'] ?? null,
+                limitCpu: $service['option']['limit_cpu'] ?? null,
+                limitMemory: $service['option']['limit_memory'] ?? null,
             );
 
             $serviceCollection->add(
