@@ -19,12 +19,13 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Webmozart\Assert\Assert;
 
 #[AsCommand(
-    name: 'app:install',
+    name: 'install',
     description: 'Install third party apps',
 )]
-final class AppInstallCommand extends Command
+final class InstallCommand extends Command
 {
     private SymfonyStyle $io;
 
@@ -56,7 +57,9 @@ final class AppInstallCommand extends Command
         $namespace = $input->getArgument('namespace');
         $url = $input->getArgument('url');
 
-        // TODO: verify namespace
+        $config = $this->config->get($namespace);
+
+        Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
         $cwd = runLocally(fn() => $this->resolvePackage($namespace, $url), $namespace);
 
@@ -97,7 +100,7 @@ final class AppInstallCommand extends Command
 
         // Setup proxy if defined
         $labels = [];
-        if (null !== $appDefinition->proxy) {
+        if (null !== $appDefinition->proxy->rule) {
             $labels[] = 'traefik.docker.lbswarm=true';
             $labels[] = 'traefik.enable=true';
 
@@ -201,20 +204,31 @@ final class AppInstallCommand extends Command
     private function downloadFromGithub(string $namespace, string $url): \Generator
     {
         // Resolve tag, use master if not defined
-        [$githubUrl, $tag] = explode('@', $url);
+        @[$githubUrl, $tag] = explode('@', $url);
+
+        if (empty($tag)) {
+            $tag = 'master';
+        }
         $file = '/archive/refs/heads/master.zip';
-        if (!empty($tag)) {
+        if ('master' !== $tag) {
             $file = "/archive/refs/tags/{$tag}.zip";
         }
+
         $githubUrl .= $file;
 
         [$dir, $appName, $cwd] = $this->prepareWorkingDirectory($namespace, $url);
 
-        yield "mkdir -p -m755 {$dir}";
-        yield "curl -L --progress-bar {$githubUrl} -o '{$dir}/{$appName}.zip'";
-        yield "unzip {$dir}/{$appName}.zip -d {$dir}";
-        yield "mv {$dir}/{$appName}-master {$dir}/{$appName} && chmod -R 755 {$dir}/{$appName}";
-        yield "rm -f {$dir}/{$appName}.zip";
+        $cmd = <<<CMD
+            mkdir -p -m755 {$dir}
+            curl -L --progress-bar {$githubUrl} -o '{$dir}/{$appName}.zip'
+            unzip {$dir}/{$appName}.zip -d {$dir}
+            mv {$dir}/{$appName}-{$tag} {$cwd}
+            chmod 755 {$cwd}
+            find {$cwd} -type d -exec chmod 755 {} \; && find {$cwd} -type f -exec chmod 644 {} \;
+            rm -f {$cwd}.zip
+        CMD;
+
+        yield 'Downloading App' => $cmd;
 
         return $cwd;
     }

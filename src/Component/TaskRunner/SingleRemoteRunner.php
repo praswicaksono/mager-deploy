@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Component\TaskRunner;
 
 use App\Component\Config\Data\Server;
-use Spatie\Ssh\Ssh;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Process\Process;
 
@@ -28,7 +27,7 @@ final class SingleRemoteRunner extends LocalRunner implements RunnerInterface
 
         return match (true) {
             'upload' === $customCommand => $this->upload($ssh, $arg),
-            default => $ssh->executeAsync($cmd),
+            default => $this->execute($ssh, $cmd),
         };
     }
 
@@ -39,5 +38,14 @@ final class SingleRemoteRunner extends LocalRunner implements RunnerInterface
         $cmd = $ssh->getUploadCommand($src, $dest);
 
         return parent::exec($cmd);
+    }
+
+    private function execute(Ssh $ssh, string $cmd): Process
+    {
+        if ($this->tty) {
+            return $ssh->executeAsyncWithTtyInput($cmd);
+        }
+
+        return $ssh->executeAsync($cmd);
     }
 }

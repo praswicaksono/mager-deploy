@@ -15,7 +15,7 @@ class LocalRunner implements RunnerInterface
 {
     public function __construct(
         private SymfonyStyle $io,
-        private bool $tty
+        private bool $tty,
     ) {}
 
     public function run(\Generator $tasks, bool $showProgress = true, bool $throwError = true): mixed

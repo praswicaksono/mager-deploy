@@ -61,3 +61,9 @@ function runOnServer(callable|string|TaskInterface $command, Server $on, $showPr
 {
     return run($command, $on, showProgress: $showProgress, throwError: $throwError);
 }
+
+function runOnServerWithTty(string $command, Server $on, $throwError = true): void
+{
+    $command = fn() => yield $command;
+    run($command, $on, showProgress: false, throwError: $throwError, tty: true);
+}

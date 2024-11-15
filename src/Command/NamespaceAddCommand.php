@@ -83,6 +83,7 @@ final class NamespaceAddCommand extends Command
             $this->config->save();
 
             $io->error($e->getMessage());
+
             return Command::FAILURE;
         }
 

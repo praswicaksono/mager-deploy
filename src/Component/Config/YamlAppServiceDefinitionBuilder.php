@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Component\Config;
 
 use App\Component\Config\Definition\Build;
+use App\Component\Config\Definition\Proxy;
+use App\Component\Config\Definition\ProxyPort;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Yaml\Yaml;
 use App\Component\Config\Definition\Config as ConfigDefinition;
@@ -14,8 +16,10 @@ final class YamlAppServiceDefinitionBuilder implements DefinitionBuilder
     public function build(string $definitionPath = 'mager.yaml', ?string $override = null): Definition
     {
         $definitionArray = Yaml::parseFile($definitionPath);
+        $name = array_key_first($definitionArray);
+        $definition = $definitionArray[$name];
 
-        $buildConfig = $definitionArray['mager']['build'] ?? [];
+        $buildConfig = $definition['build'] ?? [];
         $build = new Build(
             context: $buildConfig['context'] ?? '.',
             dockerfile: $buildConfig['dockerfile'] ?? 'Dockerfile',
@@ -23,19 +27,26 @@ final class YamlAppServiceDefinitionBuilder implements DefinitionBuilder
             image: $buildConfig['image'] ?? null,
         );
 
-        $config = $definitionArray['mager']['config'] ?? [];
+        $config = $definition['config'] ?? [];
         $configCollection = new ArrayCollection();
         foreach ($config as $item) {
             $configCollection->add(ConfigDefinition::fromString($item));
         }
 
+        $proxy = new Proxy(
+            host: $definition['proxy']['host'] ?? 'localhost',
+            ports: new ArrayCollection(array_map(fn(string $port) => new ProxyPort($port), $definition['proxy']['ports'] ?? [])),
+            rule: $definition['proxy']['rule'] ?? null,
+        );
+
         return new AppDefinition(
-            name: $definitionArray['mager']['name'],
+            name: $name,
             build: $build,
-            cmd: $definitionArray['mager']['cmd'] ?? null,
+            cmd: $definitionArray[$name]['cmd'] ?? null,
+            proxy: $proxy,
             config: $configCollection,
-            volumes: $definitionArray['mager']['volumes'] ?? [],
-            env: $definitionArray['mager']['env'] ?? [],
+            volumes: $definitionArray[$name]['volumes'] ?? [],
+            env: $definitionArray[$name]['env'] ?? [],
         );
     }
 }

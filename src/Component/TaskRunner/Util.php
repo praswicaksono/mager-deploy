@@ -7,7 +7,6 @@ namespace App\Component\TaskRunner;
 use App\Component\Config\Data\Server;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Spatie\Ssh\Ssh;
 use Symfony\Component\Process\Process;
 
 final class Util
@@ -56,6 +55,7 @@ final class Util
 
     public static function createSshConnection(Server $server, bool $tty = false): Ssh
     {
+        /* @phpstan-ignore-next-line */
         return Ssh::create(
             $server->user,
             $server->ip,
