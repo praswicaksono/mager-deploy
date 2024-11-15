@@ -86,7 +86,9 @@ final class NamespaceAddCommand extends Command
             return Command::FAILURE;
         }
 
+        $hostname = str_replace('.', '_', $hostname);
         $server['hostname'] = $hostname;
+
         $this->config->set("{$namespace}.servers.{$hostname}", $server);
         $this->config->delete("{$namespace}.servers.default");
         $this->config->save();

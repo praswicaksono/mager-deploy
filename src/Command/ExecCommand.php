@@ -57,6 +57,7 @@ class ExecCommand extends Command
 
         [, $name, $node] = explode(':', $info);
 
+        $node = str_replace('.', '_', $node);
         $server = $this->config->get("{$namespace}.servers.{$node}");
         $server = new Server($server['ip'], $server['role'], $server['ssh_port'], $server['ssh_user'], $server['ssh_key_path']);
 

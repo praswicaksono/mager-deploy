@@ -53,8 +53,10 @@ final class CommandHelper
 
     public static function transferAndLoadImage(string $namespace, string $imageName): \Generator
     {
+        // Need to yield separate this custom command since it always execute on local
+        yield 'Uploading Image To Server' => "upload /tmp/{$namespace}-{$imageName}.tar.gz:/tmp/{$namespace}-{$imageName}.tar.gz";
+
         yield <<<CMD
-            upload /tmp/{$namespace}-{$imageName}.tar.gz:/tmp/{$namespace}-{$imageName}.tar.gz
             docker load < /tmp/{$namespace}-{$imageName}.tar.gz
             rm -f /tmp/{$namespace}-{$imageName}.tar.gz
             docker image prune -a
