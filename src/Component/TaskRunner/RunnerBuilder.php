@@ -20,9 +20,21 @@ final class RunnerBuilder
 
     private bool $workerOnly = false;
 
+    private bool $tty = false;
+
+    private ?Server $server = null;
+
     public static function create(): self
     {
         return new self();
+    }
+
+    public function withTty(bool $tty = true): self
+    {
+        $self = clone $this;
+        $self->tty = $tty;
+
+        return $self;
     }
 
     public function withConfig(Config $config): self
@@ -65,14 +77,26 @@ final class RunnerBuilder
         return $self;
     }
 
+    public function withServer(Server $server): self
+    {
+        $self = clone $this;
+        $self->server = $server;
+
+        return $self;
+    }
+
     public function build(string $namespace, bool $local = false): RunnerInterface
     {
+        if (null !== $this->server) {
+            return new SingleRemoteRunner($this->io, $this->tty, $this->server);
+        }
+
         if ($local) {
-            return new LocalRunner($this->io);
+            return new LocalRunner($this->io, $this->tty);
         }
 
         if ($this->config->isLocal($namespace)) {
-            return new LocalRunner($this->io);
+            return new LocalRunner($this->io, $this->tty);
         }
 
         if ($this->workerOnly) {
@@ -87,7 +111,7 @@ final class RunnerBuilder
 
         // execute in single manager server
         if ($this->singleManagerServer && $this->managerOnly) {
-            return new SingleRemoteRunner($this->io, $server->first());
+            return new SingleRemoteRunner($this->io, $this->tty, $server->first());
         }
 
         return new AmpPhpParallelRemoteRunner($this->io, $server);

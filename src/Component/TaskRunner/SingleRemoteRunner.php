@@ -14,14 +14,15 @@ final class SingleRemoteRunner extends LocalRunner implements RunnerInterface
     public function __construct(
         /** @phpstan-ignore property.onlyWritten */
         private SymfonyStyle $io,
+        private bool $tty,
         private Server $server,
     ) {
-        parent::__construct($io);
+        parent::__construct($io, $tty);
     }
 
     protected function exec(string $cmd): Process
     {
-        $ssh = Util::createSshConnection($this->server);
+        $ssh = Util::createSshConnection($this->server, $this->tty);
 
         @[$customCommand, $arg] = explode(' ', $cmd);
 

@@ -12,8 +12,6 @@ use App\Component\Config\Definition\Service;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Yaml\Yaml;
 
-use function Amp\File\exists;
-
 final class YamlServiceDefinitionBuilder implements DefinitionBuilder
 {
     public function build(string $definitionPath = 'mager.yaml', ?string $override = null): ServiceDefinition
@@ -21,7 +19,7 @@ final class YamlServiceDefinitionBuilder implements DefinitionBuilder
         $definitionArray = Yaml::parseFile($definitionPath);
 
         if (null !== $override) {
-            if (exists("./mager.{$override}.yaml")) {
+            if (file_exists("./mager.{$override}.yaml")) {
                 $arrayOverride = Yaml::parseFile("mager.{$override}.yaml");
                 $definitionArray = array_replace_recursive($definitionArray, $arrayOverride);
             }

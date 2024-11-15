@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Component\TaskRunner;
 
+use Swoole\Timer;
 use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Process\Exception\ProcessSignaledException;
@@ -14,6 +15,7 @@ class LocalRunner implements RunnerInterface
 {
     public function __construct(
         private SymfonyStyle $io,
+        private bool $tty
     ) {}
 
     public function run(\Generator $tasks, bool $showProgress = true, bool $throwError = true): mixed
@@ -31,9 +33,11 @@ class LocalRunner implements RunnerInterface
 
             $progress = null;
             if ($showProgress && is_string($label)) {
-                $progress = new ProgressIndicator($this->io);
+                $progress = new ProgressIndicator($this->io, 'verbose');
                 $progress->start($label);
             }
+
+            $timer = Timer::tick(500, fn() => $progress?->advance());
 
             try {
                 $process->wait(function () use ($progress, $showProgress) {
@@ -46,6 +50,8 @@ class LocalRunner implements RunnerInterface
                 $this->io->writeln($process->getOutput());
                 throw $e;
             }
+
+            Timer::clear($timer);
 
             $exitCode = $process->getExitCode();
 
@@ -78,6 +84,7 @@ class LocalRunner implements RunnerInterface
 
         $process->setTimeout(60 * 30);
         $process->setIdleTimeout(60 * 30);
+        $process->setTty($this->tty);
         $process->start();
 
         return $process;

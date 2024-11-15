@@ -10,8 +10,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use function Amp\File\exists;
-
 #[AsCommand(
     name: 'init',
     description: 'Generate Sample Mager Definition',
@@ -63,7 +61,7 @@ final class InitCommand extends Command
         yield "rm -f {$folder}/LICENSE.md && rm -f {$folder}/README.md";
         yield "chmod 755 {$folder} && find {$folder} -type d -exec chmod 755 {} \; && find {$folder} -type f -exec chmod 644 {} \; && mv {$folder}/* . && rm -rf {$folder}";
 
-        if (exists('./scripts.php')) {
+        if (file_exists('./scripts.php')) {
             $script = require './scripts.php';
             $reflection = new \ReflectionFunction($script);
 
@@ -84,7 +82,7 @@ final class InitCommand extends Command
 
     private function generateSampleDefinition(): \Generator
     {
-        if (exists('mager.yaml')) {
+        if (file_exists('mager.yaml')) {
             return;
         }
 

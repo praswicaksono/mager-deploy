@@ -9,11 +9,6 @@ use App\Component\Config\Data\Server;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
-use function Amp\File\createDirectory;
-use function Amp\File\exists;
-use function Amp\File\write;
-use function Amp\File\read;
-
 final class Json implements Config
 {
     /**
@@ -28,21 +23,22 @@ final class Json implements Config
         $object = new self();
 
         $dir = str_replace('/config.json', '', $path);
-        if (! exists($dir)) {
-            createDirectory($dir, 0755);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
         }
 
         touch($path);
-        $json = read($path);
-        if (empty($json)) {
+        $json = file_get_contents($path);
+        if (false === $json) {
             $json = '{}';
         }
 
-        try {
-            $json = read('.mager/config.json');
-            $path = '.mager/config.json';
-        } catch (\Exception) {
-
+        if (file_exists('./.mager/config.json')) {
+            $json = file_get_contents('./.mager/config.json');
+            if (false === $json) {
+                $json = '{}';
+            }
+            $path = '/.mager/config.json';
         }
 
         $object->config = \dot(json_decode($json, true));
@@ -72,7 +68,7 @@ final class Json implements Config
 
     public function save(): void
     {
-        write($this->path, json_encode($this->config->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        file_put_contents($this->path, json_encode($this->config->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
     public function isLocal(string $namespace): bool
@@ -80,7 +76,7 @@ final class Json implements Config
         $isLocal = $this->get("{$namespace}.is_local") ?? null;
 
         if (null === $isLocal) {
-            throw new \InvalidArgumentException("{$namespace} has not initialized. Please run mager init");
+            throw new \InvalidArgumentException("{$namespace} not exists, please run 'mager namespace:add <namespace>'");
         }
 
         return $isLocal;

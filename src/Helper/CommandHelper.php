@@ -6,16 +6,13 @@ namespace App\Helper;
 
 use App\Component\TaskRunner\TaskBuilder\DockerCreateService;
 
-use function Amp\File\createDirectory;
-use function Amp\File\isDirectory;
-
 final class CommandHelper
 {
     public static function generateTlsCertificateLocally(string $namespace, string $domain): \Generator
     {
         $path = getenv('HOME') . '/.mager/certs';
-        if (!isDirectory($path)) {
-            createDirectory($path, 0755);
+        if (!is_dir($path)) {
+            mkdir($path, 0755);
         }
 
         $uid = trim(yield 'id -u');

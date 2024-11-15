@@ -13,8 +13,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Webmozart\Assert\Assert;
 
-use function Amp\File\exists;
-
 #[AsCommand(
     name: 'build',
     description: 'Build an image for mager.yaml definition',
@@ -96,7 +94,7 @@ final class BuildCommand extends Command
         Assert::notEmpty($name, '--name must be a non-empty string');
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
-        if (! exists($dockerfile)) {
+        if (! file_exists($dockerfile)) {
             $this->io->error('Dockerfile does not exist');
 
             return Command::FAILURE;

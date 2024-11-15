@@ -65,10 +65,7 @@ final class NamespaceAddCommand extends Command
             $proxyPassword = $io->askQuestion(new Question('Please enter proxy password:', 'admin123'));
         }
 
-        $servers = [];
-        $servers[] = $server;
-
-        $this->config->set("{$namespace}.servers", $servers);
+        $this->config->set("{$namespace}.servers.default", $server);
         $this->config->set("{$namespace}.namespace", $namespace);
         $this->config->set("{$namespace}.proxy_dashboard", $proxyDashboard);
         $this->config->set("{$namespace}.proxy_user", $proxyUser);
@@ -79,8 +76,23 @@ final class NamespaceAddCommand extends Command
 
         $this->config->save();
 
+        try {
+            $hostname = trim(runOnManager(fn() => yield 'hostname', $namespace));
+        } catch (\Exception $e) {
+            $this->config->delete($namespace);
+            $this->config->save();
+
+            $io->error($e->getMessage());
+            return Command::FAILURE;
+        }
+
+        $server['hostname'] = $hostname;
+        $this->config->set("{$namespace}.servers.{$hostname}", $server);
+        $this->config->delete("{$namespace}.servers.default");
+        $this->config->save();
+
         if ($isLocal) {
-            \Amp\File\touch(getenv('HOME') . '/.mager/dynamic.yaml');
+            touch(getenv('HOME') . '/.mager/dynamic.yaml');
         }
 
         $io->success('Namespace successfully added!');

@@ -13,9 +13,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Webmozart\Assert\Assert;
 
-use function Amp\File\createDirectory;
-use function Amp\File\write;
-
 #[AsCommand(
     name: 'namespace:dump',
     description: 'Dump namespace configuration to current directory',
@@ -44,8 +41,8 @@ final class NamespaceDumpCommand extends Command
         Assert::notEmpty($config, "Namespace {$namespace} are not exists");
 
         $dir = '.mager';
-        createDirectory($dir, 0755);
-        write($dir . '/config.json', json_encode($config, JSON_PRETTY_PRINT));
+        mkdir($dir, 0755);
+        file_put_contents($dir . '/config.json', json_encode($config, JSON_PRETTY_PRINT));
 
         $io->success('Namespace configuration was successfully dumped!');
 

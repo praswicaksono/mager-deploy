@@ -20,8 +20,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use function Amp\File\exists;
-
 #[AsCommand(
     name: 'app:install',
     description: 'Install third party apps',
@@ -62,7 +60,7 @@ final class AppInstallCommand extends Command
 
         $cwd = runLocally(fn() => $this->resolvePackage($namespace, $url), $namespace);
 
-        if (! exists($cwd . '/mager.yaml')) {
+        if (! file_exists($cwd . '/mager.yaml')) {
             throw new \InvalidArgumentException("Cant find 'mager.yaml' in '$cwd'");
         }
 

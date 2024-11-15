@@ -54,7 +54,7 @@ final class Util
         return $collection;
     }
 
-    public static function createSshConnection(Server $server): Ssh
+    public static function createSshConnection(Server $server, bool $tty = false): Ssh
     {
         return Ssh::create(
             $server->user,
@@ -65,7 +65,8 @@ final class Util
             ->disableStrictHostKeyChecking()
             ->disablePasswordAuthentication()
             ->useMultiplexing("/tmp/{$server->user}-{$server->ip}-%C")
-            ->configureProcess(function (Process $process) {
+            ->configureProcess(function (Process $process) use ($tty) {
+                $process->setTty($tty);
                 $process->setIdleTimeout(60 * 30);
             })
             ->setTimeout(60 * 30);
