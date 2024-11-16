@@ -74,6 +74,8 @@ final class ServiceDelCommand extends Command
                 $this->io->success('Service has been deleted.');
 
                 if (array_key_exists($name, $apps)) {
+                    $appDir = getenv('HOME') . "/.mager/apps/{$namespace}/{$name}";
+                    yield "rm -rf {$appDir}";
                     unset($apps[$name]);
                     $this->config->set("{$namespace}.apps", $apps);
                     $this->config->save();

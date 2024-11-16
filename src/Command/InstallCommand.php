@@ -226,7 +226,7 @@ final class InstallCommand extends Command
             mkdir -p -m755 {$dir}
             curl -L --progress-bar {$githubUrl} -o '{$dir}/{$appName}.zip'
             unzip {$dir}/{$appName}.zip -d {$dir}
-            mv {$dir}/{$appName}-{$tag} {$cwd}
+            mv {$dir}/apps-{$appName}-{$tag} {$cwd}
             chmod 755 {$cwd}
             find {$cwd} -type d -exec chmod 755 {} \; && find {$cwd} -type f -exec chmod 644 {} \;
             rm -f {$cwd}.zip
