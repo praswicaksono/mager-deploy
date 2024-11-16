@@ -164,7 +164,7 @@ final class InstallCommand extends Command
             );
         }
 
-        yield "Deploying App: {$appDefinition->name}" => DockerCreateService::create($namespace, $appDefinition->name, $image)
+        yield "Deploying Service: {$appDefinition->name}" => DockerCreateService::create($namespace, $appDefinition->name, $image)
             ->withConstraints($constraint)
             ->withNetworks($network)
             ->withLabels($labels)

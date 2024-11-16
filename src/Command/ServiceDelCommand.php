@@ -50,6 +50,8 @@ final class ServiceDelCommand extends Command
 
     private function deleteService(string $namespace, string $name): \Generator
     {
+        $apps = $this->config->get("{$namespace}.apps");
+
         $fullServiceName = "{$namespace}-{$name}";
 
         $id = yield sprintf('docker service ls --format "{{.ID}}|{{.Name}}" --filter name=%s', $fullServiceName);
@@ -65,11 +67,17 @@ final class ServiceDelCommand extends Command
                 continue;
             }
 
-            [$serviceId, $name] = explode('|', $services);
+            [$serviceId, $serviceName] = explode('|', $services);
 
-            if ($name === $fullServiceName) {
+            if ($serviceName === $fullServiceName) {
                 yield sprintf('docker service rm %s', $serviceId);
                 $this->io->success('Service has been deleted.');
+
+                if (array_key_exists($name, $apps)) {
+                    unset($apps[$name]);
+                    $this->config->set("{$namespace}.apps", $apps);
+                    $this->config->save();
+                }
 
                 return Command::SUCCESS;
             }
