@@ -61,7 +61,7 @@ final class InstallCommand extends Command
 
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
-        $cwd = runLocally(fn() => $this->resolvePackage($namespace, $url), $namespace);
+        $cwd = runLocally(fn() => $this->resolvePackage($namespace, $url));
 
         if (! file_exists($cwd . '/mager.yaml')) {
             throw new \InvalidArgumentException("Cant find 'mager.yaml' in '$cwd'");
@@ -75,8 +75,11 @@ final class InstallCommand extends Command
             return $code;
         }
 
-        $this->config->set("{$namespace}.apps.{$appDefinition->name}", $url);
-        $this->config->save();
+        if ($code === Command::SUCCESS) {
+            $this->config->set("{$namespace}.apps.{$appDefinition->name}", $url);
+            $this->config->save();
+            $this->io->success("{$appDefinition->name} Successfully Installed To {$namespace}");
+        }
 
         return $code;
     }
@@ -161,7 +164,7 @@ final class InstallCommand extends Command
             );
         }
 
-        yield DockerCreateService::create($namespace, $appDefinition->name, $image)
+        yield "Deploying App: {$appDefinition->name}" => DockerCreateService::create($namespace, $appDefinition->name, $image)
             ->withConstraints($constraint)
             ->withNetworks($network)
             ->withLabels($labels)
@@ -193,6 +196,7 @@ final class InstallCommand extends Command
         $dir = getenv('HOME') . '/.mager/apps/' . $namespace;
         $appName = explode('/', $url);
         $appName = end($appName);
+        $appName = str_replace('apps-', '', $appName);
 
         $cwd = $dir . '/' . $appName;
 
@@ -237,8 +241,10 @@ final class InstallCommand extends Command
     {
         [$dir, , $cwd] = $this->prepareWorkingDirectory($namespace, $url);
 
-        yield "mkdir -p -m755 {$dir}";
-        yield "ln -nsf {$url} {$dir}";
+        yield <<<CMD
+        mkdir -p -m755 {$dir}
+        ln -nsf {$url} {$dir}
+        CMD;
 
         return $cwd;
     }

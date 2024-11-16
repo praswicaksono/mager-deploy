@@ -45,24 +45,24 @@ function run(callable|string|TaskInterface $command, string|Server $on, $local =
     return $runner->run($generator, showProgress: $showProgress, throwError: $throwError);
 }
 
-function runLocally(callable|string|TaskInterface $command, $showProgress = true, $throwError = true, $tty = false): mixed {
+function runLocally(callable|string|TaskInterface $command, bool $showProgress = true, bool $throwError = true, bool $tty = false): mixed {
     return run($command, 'local', local: true, showProgress: $showProgress, throwError: $throwError, tty: $tty);
 }
 
-function runOnManager(callable|string|TaskInterface $command, string $on, $showProgress = true, $throwError = true): mixed {
+function runOnManager(callable|string|TaskInterface $command, string $on, bool $showProgress = true, bool $throwError = true): mixed {
     return run($command, $on, managerOnly: true, showProgress: $showProgress, throwError: $throwError);
 }
 
-function runOnWorker(callable|string|TaskInterface $command, string $on, $showProgress = true, $throwError = true): void {
+function runOnWorker(callable|string|TaskInterface $command, string $on, bool $showProgress = true, bool $throwError = true): void {
     run($command, $on, workerOnly: true, showProgress: $showProgress, throwError: $throwError);
 }
 
-function runOnServer(callable|string|TaskInterface $command, Server $on, $showProgress = true, $throwError = true): mixed
+function runOnServer(callable|string|TaskInterface $command, Server $on, bool $showProgress = true, bool $throwError = true): mixed
 {
     return run($command, $on, showProgress: $showProgress, throwError: $throwError);
 }
 
-function runOnServerWithTty(string $command, Server $on, $throwError = true): void
+function runOnServerWithTty(string $command, Server $on, bool $throwError = true): void
 {
     $command = fn() => yield $command;
     run($command, $on, showProgress: false, throwError: $throwError, tty: true);
