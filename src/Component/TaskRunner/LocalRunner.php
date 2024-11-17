@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Component\TaskRunner;
 
+use Swoole\Coroutine;
+use Swoole\Coroutine\System;
 use Swoole\Timer;
 use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -38,6 +40,13 @@ class LocalRunner implements RunnerInterface
             }
 
             $timer = Timer::tick(500, fn() => $progress?->advance());
+            $cid = go(function() use ($process) {
+                System::waitSignal(SIGINT);
+                if (! $process->isRunning()) {
+                    return;
+                }
+                $process->stop(signal: SIGINT);
+            });
 
             try {
                 $process->wait(function () use ($progress, $showProgress) {
@@ -51,13 +60,12 @@ class LocalRunner implements RunnerInterface
                 throw $e;
             }
 
+            Coroutine::cancel($cid);
             Timer::clear($timer);
 
             $exitCode = $process->getExitCode();
 
             if (0 !== $exitCode && $throwError) {
-                $this->io->error($process->getErrorOutput());
-                $this->io->writeln($process->getOutput());
                 $tasks->throw(new \Exception($process->getErrorOutput()));
             }
 

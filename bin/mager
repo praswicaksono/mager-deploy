@@ -44,7 +44,6 @@ $exitCode = 0;
     } catch (ExitException $e) {
         $exitCode = $e->getStatus();
     }
-
 });
 
 exit($exitCode);

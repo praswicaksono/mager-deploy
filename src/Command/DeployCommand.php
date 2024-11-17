@@ -234,7 +234,7 @@ final class DeployCommand extends Command
         // just update image if service exists
         // TODO: update other configuration like cpu, labels, mount, ram
         if (yield CommandHelper::isServiceRunning($namespace, $serviceName)) {
-            yield "Deploying {$fullServiceName}" => "docker service update --image {$imageName} --force {$namespace}-{$serviceName}";
+            yield "Deploying {$fullServiceName}" => "docker service update --image {$imageName} --force --task-history-limit 5 {$namespace}-{$serviceName}";
 
             return;
         }

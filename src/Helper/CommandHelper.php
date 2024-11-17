@@ -33,11 +33,11 @@ final class CommandHelper
             ->withCommand($domain);
     }
 
-    public static function isServiceRunning(string $namespace, string $name, string $mode = 'replicated'): string
+    public static function isServiceRunning(string $namespace, string $name): string
     {
         $fullServiceName = "{$namespace}-{$name}";
 
-        return sprintf('docker service ls --format "{{.ID}}" --filter name=%s --filter mode=%s', $fullServiceName, $mode);
+        return sprintf('docker service ps --format "{{.ID}}" %s', $fullServiceName);
     }
 
     public static function removeService(string $namespace, string $name, string $mode = 'replicated'): \Generator

@@ -49,8 +49,8 @@ function runLocally(callable|string|TaskInterface $command, bool $showProgress =
     return run($command, 'local', local: true, showProgress: $showProgress, throwError: $throwError, tty: $tty);
 }
 
-function runOnManager(callable|string|TaskInterface $command, string $on, bool $showProgress = true, bool $throwError = true): mixed {
-    return run($command, $on, managerOnly: true, showProgress: $showProgress, throwError: $throwError);
+function runOnManager(callable|string|TaskInterface $command, string $on, bool $showProgress = true, bool $throwError = true, bool $tty = false): mixed {
+    return run($command, $on, managerOnly: true, showProgress: $showProgress, throwError: $throwError, tty: $tty);
 }
 
 function runOnWorker(callable|string|TaskInterface $command, string $on, bool $showProgress = true, bool $throwError = true): void {
