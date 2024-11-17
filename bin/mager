@@ -20,7 +20,7 @@ $app = function (array $context) {
     $app = new ConsoleApplication($kernel);
 
     $app->setName('Mager Deploy');
-    $app->setVersion('v0.0.9');
+    $app->setVersion('v0.1.0');
 
     return $app;
 };
