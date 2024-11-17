@@ -50,7 +50,7 @@ final class ServiceDelCommand extends Command
 
     private function deleteService(string $namespace, string $name): \Generator
     {
-        $apps = $this->config->get("{$namespace}.apps");
+        $apps = $this->config->get("{$namespace}.apps") ?? [];
 
         $fullServiceName = "{$namespace}-{$name}";
 

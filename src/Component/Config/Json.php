@@ -38,7 +38,6 @@ final class Json implements Config
             if (false === $json) {
                 $json = '{}';
             }
-            $path = '/.mager/config.json';
         }
 
         $object->config = \dot(json_decode($json, true));
