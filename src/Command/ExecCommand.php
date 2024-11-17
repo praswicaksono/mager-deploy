@@ -31,20 +31,18 @@ class ExecCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
         $namespace = $input->getArgument('namespace');
         $serviceName = $input->getArgument('serviceName');
         $command = implode(' ', $input->getArgument('cmd'));
 
         if ($this->config->isLocal($namespace)) {
-            $result = runLocally(function () use ($namespace, $command) {
+            runLocally(function () use ($namespace, $serviceName, $command) {
                 $cmd = <<<CMD
-                docker exec -ti `docker ps -a --filter name={$namespace}-{$namespace} --format '{{ .ID}}'` {$command}
+                docker exec -ti `docker ps -a --filter name={$namespace}-{$serviceName} --format '{{ .ID}}' | head -n1` {$command}
                 CMD;
 
                 return yield $cmd;
             }, tty: true);
-            $io->writeln($result);
 
             return Command::SUCCESS;
         }

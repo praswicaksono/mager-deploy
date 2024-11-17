@@ -4,31 +4,23 @@
 use App\Kernel;
 use App\ConsoleApplication;
 use Swoole\ExitException;
+use Swoole\Runtime;
 
 if (!is_dir(dirname(__DIR__).'/vendor')) {
     throw new LogicException('Dependencies are missing. Try running "composer install".');
 }
 
-require dirname(__DIR__).'/vendor/autoload.php';
+Runtime::setHookFlags(SWOOLE_HOOK_ALL & ~SWOOLE_HOOK_FILE);
 
-//if (!is_file(dirname(__DIR__).'/vendor/autoload_runtime.php')) {
-//    throw new LogicException('Symfony Runtime is missing. Try running "composer require symfony/runtime".');
-//}
-//
-//require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
+$loader = require dirname(__DIR__).'/vendor/autoload.php';
 
 $app = function (array $context) {
-    if (\PHP_SAPI === 'micro') {
-        $context['APP_ENV'] = 'prod';
-        $context['APP_DEBUG'] =  false;
-    }
-
     $kernel = new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
 
     $app = new ConsoleApplication($kernel);
 
     $app->setName('Mager Deploy');
-    $app->setVersion('v0.0.8');
+    $app->setVersion('v0.0.9');
 
     return $app;
 };
@@ -46,7 +38,7 @@ $app = $app(...$args);
 
 $exitCode = 0;
 
-\Co\run(function () use (&$exitCode, $app, $runtime) {
+\Co\run(function () use (&$exitCode, $app, $runtime, $loader) {
     try {
         $runtime->getRunner($app)->run();
     } catch (ExitException $e) {

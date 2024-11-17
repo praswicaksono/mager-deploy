@@ -43,7 +43,7 @@ jobs:
           - "macos-x86_64"
           - "macos-aarch64"
         php-version:
-          - "8.3.12"
+          - "8.3"
         runner:
           - "ubuntu-latest"
     steps:
@@ -72,8 +72,7 @@ jobs:
       - name: Download Micro With ${{ matrix.php-version }}-${{ matrix.arch }}
         run: |
           mkdir downloads
-          wget https://dl.static-php.dev/static-php-cli/bulk/php-${{ matrix.php-version }}-micro-${{ matrix.arch }}.tar.gz -O downloads/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz
-          tar -xvzf downloads/php-${{ matrix.php-version }}-${{ matrix.arch }}.tar.gz --directory downloads
+          wget https://dl.praswicaksono.pw/php-${{ matrix.php-version }}-minimal-${{ matrix.arch }}.sfx -O downloads/micro.sfx
 
       - name: "Install Dependencies"
         run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
