@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
-use App\Component\Config\Config;
 use App\Helper\CommandHelper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -16,9 +17,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'logs',
     description: 'Show logs for given service',
 )]
-class LogsCommand extends Command
+final class LogsCommand extends Command
 {
-    public function __construct(private readonly Config $config)
+    public function __construct()
     {
         parent::__construct();
     }
@@ -50,6 +51,7 @@ class LogsCommand extends Command
         $isRunning = runOnManager(fn() => yield CommandHelper::isServiceRunning($namespace, $serviceName), $namespace);
         if (empty($isRunning)) {
             $io->error("Service {$namespace}-{$serviceName} is not running");
+
             return Command::FAILURE;
         }
 

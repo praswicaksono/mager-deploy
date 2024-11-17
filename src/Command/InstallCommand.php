@@ -75,7 +75,7 @@ final class InstallCommand extends Command
             return $code;
         }
 
-        if ($code === Command::SUCCESS) {
+        if (Command::SUCCESS === $code) {
             $this->config->set("{$namespace}.apps.{$appDefinition->name}", $url);
             $this->config->save();
             $this->io->success("{$appDefinition->name} Successfully Installed To {$namespace}");

@@ -40,7 +40,7 @@ class LocalRunner implements RunnerInterface
             }
 
             $timer = Timer::tick(500, fn() => $progress?->advance());
-            $cid = go(function() use ($process) {
+            $cid = go(function () use ($process) {
                 System::waitSignal(SIGINT);
                 if (! $process->isRunning()) {
                     return;
