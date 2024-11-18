@@ -31,7 +31,10 @@ class LocalRunner implements RunnerInterface
                 $cmd = implode(' ', $task->cmd());
             }
 
-            $process = $this->exec($cmd);
+            if (null === $cmd) {
+                $tasks->next();
+                continue;
+            }
 
             $progress = null;
             if ($showProgress && is_string($label)) {
@@ -40,33 +43,47 @@ class LocalRunner implements RunnerInterface
             }
 
             $timer = Timer::tick(500, fn() => $progress?->advance());
-            $cid = go(function () use ($process) {
-                System::waitSignal(SIGINT);
-                if (! $process->isRunning()) {
-                    return;
+
+            $wg = new Coroutine\WaitGroup(1);
+
+            /** @var Process $p */
+            $p = null;
+
+            go(function() use ($cmd, $progress, $showProgress, $wg, &$p) {
+                $process = $this->exec($cmd);
+
+                $cid = go(function () use ($process) {
+                    System::waitSignal(SIGINT);
+                    if (! $process->isRunning()) {
+                        return;
+                    }
+                    $process->stop(signal: SIGINT);
+                });
+
+
+                try {
+                    $process->wait(function () use ($progress, $showProgress) {
+                        if ($showProgress && null !== $progress) {
+                            $progress->advance();
+                        }
+                    });
+                } catch (ProcessSignaledException|ProcessTimedOutException $e) {
+                    $this->io->error($process->getErrorOutput());
+                    $this->io->writeln($process->getOutput());
+                    throw $e;
+                } finally {
+                    $p = $process;
+                    Coroutine::cancel($cid);
+                    $wg->done();
                 }
-                $process->stop(signal: SIGINT);
             });
 
-            try {
-                $process->wait(function () use ($progress, $showProgress) {
-                    if ($showProgress && null !== $progress) {
-                        $progress->advance();
-                    }
-                });
-            } catch (ProcessSignaledException|ProcessTimedOutException $e) {
-                $this->io->error($process->getErrorOutput());
-                $this->io->writeln($process->getOutput());
-                throw $e;
-            }
-
-            Coroutine::cancel($cid);
+            $wg->wait();
             Timer::clear($timer);
 
-            $exitCode = $process->getExitCode();
-
-            if (0 !== $exitCode && $throwError) {
-                $tasks->throw(new \Exception($process->getErrorOutput()));
+            if (0 !== $p->getExitCode() && $throwError) {
+                $tasks->throw(new \Exception($p->getErrorOutput()));
+                continue;
             }
 
             if ($showProgress && null !== $progress) {
@@ -74,7 +91,7 @@ class LocalRunner implements RunnerInterface
                 $this->io->writeln('');
             }
 
-            $output = $process->getOutput();
+            $output = $p->getOutput();
 
             if ($task instanceof SerializedOutputInterface) {
                 $output = $task->serialize($output);

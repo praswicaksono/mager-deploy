@@ -92,7 +92,7 @@ final class DeployCommand extends Command
         $definition = $this->definitionBuilder->build(override: $override);
 
         $this->io->title('Checking Requirement');
-        if (! runOnManager(fn() => CommandHelper::ensureServerArePrepared($namespace), $namespace, throwError: false)) {
+        if (! runOnManager(fn() => yield from CommandHelper::ensureServerArePrepared($namespace), $namespace)) {
             $this->io->error("Please run 'mager prepare {$namespace}' first");
 
             return Command::FAILURE;
@@ -165,7 +165,7 @@ final class DeployCommand extends Command
             }
 
             $this->io->section("Deploying {$service->name}");
-            runOnManager(fn() => $this->deploy(
+            runOnManager(fn() => yield from $this->deploy(
                 namespace: $namespace,
                 imageName: $imageName,
                 serviceName: "{$definition->name}-{$service->name}",
@@ -233,8 +233,9 @@ final class DeployCommand extends Command
 
         // just update image if service exists
         // TODO: update other configuration like cpu, labels, mount, ram
-        if (yield CommandHelper::isServiceRunning($namespace, $serviceName)) {
-            yield "Deploying {$fullServiceName}" => "docker service update --image {$imageName} --force --task-history-limit 5 {$namespace}-{$serviceName}";
+        $isRunning = yield from CommandHelper::isServiceRunning($namespace, $serviceName);
+        if ($isRunning) {
+            yield "Updating {$fullServiceName}" => "docker service update --image {$imageName} --force {$namespace}-{$serviceName}";
 
             return;
         }

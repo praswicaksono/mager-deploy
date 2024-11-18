@@ -33,11 +33,19 @@ final class CommandHelper
             ->withCommand($domain);
     }
 
-    public static function isServiceRunning(string $namespace, string $name): string
+    public static function isServiceRunning(string $namespace, string $name): \Generator
     {
         $fullServiceName = "{$namespace}-{$name}";
 
-        return sprintf('docker service ps --format "{{.ID}}" %s', $fullServiceName);
+        $ret = true;
+        try {
+            yield sprintf('docker service ps --format "{{.ID}}" %s', $fullServiceName);
+        } catch (\Throwable) {
+            $ret = false;
+        }
+
+        return $ret;
+
     }
 
     public static function removeService(string $namespace, string $name, string $mode = 'replicated'): \Generator
@@ -65,15 +73,16 @@ final class CommandHelper
 
     public static function ensureServerArePrepared(string $namespace): \Generator
     {
-        $node = yield 'Checking Docker Swarm' => 'docker node ls';
-        if (empty($node)) {
-            return false;
+        $ret = true;
+        try {
+            yield 'docker node ls';
+            if (! yield from CommandHelper::isServiceRunning($namespace, 'mager_proxy')) {
+                $ret = false;
+            }
+        } catch (\Exception) {
+            $ret = false;
         }
 
-        if (empty(yield 'Checking Traefik Proxy' => CommandHelper::isServiceRunning($namespace, 'mager_proxy'))) {
-            return false;
-        }
-
-        return true;
+        return $ret;
     }
 }

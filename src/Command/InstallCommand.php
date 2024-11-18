@@ -86,7 +86,7 @@ final class InstallCommand extends Command
 
     private function deploy(string $namespace, string $cwd, AppDefinition $appDefinition): \Generator
     {
-        if (!empty(yield CommandHelper::isServiceRunning($namespace, $appDefinition->name))) {
+        if (yield from CommandHelper::isServiceRunning($namespace, $appDefinition->name)) {
             $this->io->error("Service '{$appDefinition->name}' is already deployed.");
 
             return Command::FAILURE;

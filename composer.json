@@ -17,7 +17,8 @@
         "symfony/framework-bundle": "7.1.*",
         "symfony/runtime": "7.1.*",
         "symfony/yaml": "7.1.*",
-        "webmozart/assert": "^1.11"
+        "webmozart/assert": "^1.11",
+        "swoole/ide-helper": "^5.0.0"
     },
     "config": {
         "allow-plugins": {
@@ -80,7 +81,6 @@
         "friendsofphp/php-cs-fixer": "^3.64",
         "phpstan/phpstan": "^1.12",
         "phpunit/phpunit": "^9.5",
-        "swoole/ide-helper": "~5.0.0",
         "symfony/browser-kit": "7.1.*",
         "symfony/css-selector": "7.1.*",
         "symfony/maker-bundle": "^1.61",

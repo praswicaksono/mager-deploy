@@ -56,10 +56,12 @@ final class InitCommand extends Command
 
         $url = "https://github.com/magerdeploy/{$template}/archive/refs/heads/master.zip";
 
-        yield "curl -L --progress-bar {$url} -o 'mager-template.zip'";
-        yield 'unzip mager-template.zip -d . && rm -rf mager-template.zip';
-        yield "rm -f {$folder}/LICENSE.md && rm -f {$folder}/README.md";
-        yield "chmod 755 {$folder} && find {$folder} -type d -exec chmod 755 {} \; && find {$folder} -type f -exec chmod 644 {} \; && mv {$folder}/* . && rm -rf {$folder}";
+        yield <<<CMD
+            curl -L --progress-bar {$url} -o 'mager-template.zip'
+            unzip mager-template.zip -d . && rm -rf mager-template.zip
+            rm -f {$folder}/LICENSE.md && rm -f {$folder}/README.md
+            chmod 755 {$folder} && find {$folder} -type d -exec chmod 755 {} \; && find {$folder} -type f -exec chmod 644 {} \; && mv {$folder}/* . && rm -rf {$folder}
+        CMD;
 
         if (file_exists('./scripts.php')) {
             $script = require './scripts.php';
