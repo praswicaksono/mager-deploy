@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cc3259bbdc0a8a8fe6549f03082c151d",
+    "content-hash": "092952190ae92c86f09027effa2acb3f",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -453,6 +453,38 @@
                 }
             ],
             "time": "2024-11-06T22:10:55+00:00"
+        },
+        {
+            "name": "swoole/ide-helper",
+            "version": "5.1.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/swoole/ide-helper.git",
+                "reference": "a4207701bb55fe0cea06f840d2054cbc4a90b943"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/swoole/ide-helper/zipball/a4207701bb55fe0cea06f840d2054cbc4a90b943",
+                "reference": "a4207701bb55fe0cea06f840d2054cbc4a90b943",
+                "shasum": ""
+            },
+            "type": "library",
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Team Swoole",
+                    "email": "team@swoole.com"
+                }
+            ],
+            "description": "IDE help files for Swoole.",
+            "support": {
+                "issues": "https://github.com/swoole/ide-helper/issues",
+                "source": "https://github.com/swoole/ide-helper/tree/5.1.5"
+            },
+            "time": "2024-11-05T07:35:30+00:00"
         },
         {
             "name": "symfony/cache",
@@ -3804,16 +3836,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "1.12.10",
+            "version": "1.12.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "fc463b5d0fe906dcf19689be692c65c50406a071"
+                "reference": "0d1fc20a962a91be578bcfe7cf939e6e1a2ff733"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/fc463b5d0fe906dcf19689be692c65c50406a071",
-                "reference": "fc463b5d0fe906dcf19689be692c65c50406a071",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/0d1fc20a962a91be578bcfe7cf939e6e1a2ff733",
+                "reference": "0d1fc20a962a91be578bcfe7cf939e6e1a2ff733",
                 "shasum": ""
             },
             "require": {
@@ -3858,7 +3890,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2024-11-11T15:37:09+00:00"
+            "time": "2024-11-17T14:08:01+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -5774,38 +5806,6 @@
                 }
             ],
             "time": "2020-09-28T06:39:44+00:00"
-        },
-        {
-            "name": "swoole/ide-helper",
-            "version": "5.0.3",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/swoole/ide-helper.git",
-                "reference": "4b6e615cb27c251b6248b8bd9501edbd02a45c18"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/swoole/ide-helper/zipball/4b6e615cb27c251b6248b8bd9501edbd02a45c18",
-                "reference": "4b6e615cb27c251b6248b8bd9501edbd02a45c18",
-                "shasum": ""
-            },
-            "type": "library",
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "Apache-2.0"
-            ],
-            "authors": [
-                {
-                    "name": "Team Swoole",
-                    "email": "team@swoole.com"
-                }
-            ],
-            "description": "IDE help files for Swoole.",
-            "support": {
-                "issues": "https://github.com/swoole/ide-helper/issues",
-                "source": "https://github.com/swoole/ide-helper/tree/5.0.3"
-            },
-            "time": "2023-04-28T22:20:18+00:00"
         },
         {
             "name": "symfony/browser-kit",
