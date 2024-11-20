@@ -85,4 +85,11 @@ final class CommandHelper
 
         return $ret;
     }
+
+    public static function getOSName(): \Generator
+    {
+        return yield <<<CMD
+            grep -w "ID" /etc/os-release | cut -d "=" -f 2 | tr -d '"'
+        CMD;
+    }
 }

@@ -40,7 +40,11 @@ final class NamespaceShowCommand extends Command
         $config = $this->config->get($namespace);
         Assert::notEmpty($config, "Namespace {$namespace} are not exists");
 
-        $io->write(json_encode($config, JSON_PRETTY_PRINT));
+        $io->writeln(json_encode($config, JSON_PRETTY_PRINT));
+
+        $io->title('Namespace Nodes');
+
+        $io->writeln(runOnManager(fn() => yield 'docker node ls', $namespace));
 
         return Command::SUCCESS;
     }

@@ -4,18 +4,11 @@ declare(strict_types=1);
 return function(): \Generator {
     yield "Upgrading Packages" => <<<CMD
         DEBIAN_FRONTEND=noninteractive sudo apt-get update -y && sudo apt-get upgrade -y
+        sudo apt-get install ca-certificates curl wget git jq openssl
     CMD;
 
     yield "Installing Docker" => <<<CMD
-        sudo apt-get install ca-certificates curl
-        sudo install -m 0755 -d /etc/apt/keyrings
-        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-        sudo chmod a+r /etc/apt/keyrings/docker.asc
-        echo \
-          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-          $(. /etc/os-release && echo "\$VERSION_CODENAME") stable" | \
-          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        sudo apt-get update -y && sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+        curl -s https://releases.rancher.com/install-docker/27.0.3.sh | sh 2>&1
     CMD;
 
     yield "Setup Firewall" => <<<CMD
@@ -26,6 +19,7 @@ return function(): \Generator {
          sudo ufw allow 2377/tcp
          sudo ufw allow 7946
          sudo ufw allow 4789/udp
+         sudo ufw reload
     CMD;
 
     yield "Disable Password Login" => <<<CMD

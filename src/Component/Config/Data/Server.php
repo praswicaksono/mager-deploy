@@ -26,6 +26,7 @@ final class Server
             'ssh_user' => $this->user,
             'ssh_key_path' => $this->keyPath,
             'role' => $this->role,
+            'hostname' => $this->hostname,
         ];
     }
 }
