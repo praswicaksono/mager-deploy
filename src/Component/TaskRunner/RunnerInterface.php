@@ -6,5 +6,8 @@ namespace App\Component\TaskRunner;
 
 interface RunnerInterface
 {
-    public function run(\Generator $tasks, bool $showProgress = true, bool $throwError = true): mixed;
+    /**
+     * @param callable(): \Generator $tasks
+     */
+    public function run(callable $tasks, bool $showProgress = true, bool $throwError = true): mixed;
 }

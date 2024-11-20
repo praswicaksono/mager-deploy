@@ -34,7 +34,8 @@
             "App\\": "src/"
         },
         "files": [
-            "helpers/functions.php"
+            "helpers/functions.php",
+            "provisions/ubuntu.php"
         ]
     },
     "autoload-dev": {

@@ -24,6 +24,8 @@ final class RunnerBuilder
 
     private ?Server $server = null;
 
+    private int $concurrency = 5;
+
     public static function create(): self
     {
         return new self();
@@ -85,6 +87,14 @@ final class RunnerBuilder
         return $self;
     }
 
+    public function withConcurrency(int $concurrency): self
+    {
+        $self = clone $this;
+        $self->concurrency = $concurrency;
+
+        return $self;
+    }
+
     public function build(string $namespace, bool $local = false): RunnerInterface
     {
         if (null !== $this->server) {
@@ -100,20 +110,24 @@ final class RunnerBuilder
         }
 
         if ($this->workerOnly) {
-            $server = $this->config->getServers($namespace)
+            $servers = $this->config->getServers($namespace)
                 ->filter(fn(Server $server): bool => 'worker' === $server->role);
 
-            return new AmpPhpParallelRemoteRunner($this->io, $server);
+            return new SwooleMultiRemoteRunner($this->io, $servers, $this->concurrency);
         }
 
-        $server = $this->config->getServers($namespace)
+        $managerServers = $this->config->getServers($namespace)
             ->filter(fn(Server $server): bool => 'manager' === $server->role);
 
         // execute in single manager server
         if ($this->singleManagerServer && $this->managerOnly) {
-            return new SingleRemoteRunner($this->io, $this->tty, $server->first());
+            return new SingleRemoteRunner($this->io, $this->tty, $managerServers->first());
         }
 
-        return new AmpPhpParallelRemoteRunner($this->io, $server);
+        if (!$this->singleManagerServer && $this->managerOnly) {
+            return new SwooleMultiRemoteRunner($this->io, $managerServers, $this->concurrency);
+        }
+
+        return new SwooleMultiRemoteRunner($this->io, $this->config->getServers($namespace), $this->concurrency);
     }
 }

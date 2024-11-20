@@ -48,4 +48,9 @@ final class SingleRemoteRunner extends LocalRunner implements RunnerInterface
 
         return $ssh->executeAsync($cmd);
     }
+
+    protected function on(): string
+    {
+        return $this->server->hostname ?? $this->server->ip;
+    }
 }

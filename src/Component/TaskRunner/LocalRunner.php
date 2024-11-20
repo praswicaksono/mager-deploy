@@ -20,8 +20,9 @@ class LocalRunner implements RunnerInterface
         private bool $tty,
     ) {}
 
-    public function run(\Generator $tasks, bool $showProgress = true, bool $throwError = true): mixed
+    public function run(callable $tasks, bool $showProgress = true, bool $throwError = true): mixed
     {
+        $tasks = $tasks();
         while ($tasks->valid()) {
             $task = $tasks->current();
             $label = $tasks->key();
@@ -39,7 +40,12 @@ class LocalRunner implements RunnerInterface
             $progress = null;
             if ($showProgress && is_string($label)) {
                 $progress = new ProgressIndicator($this->io, 'verbose');
-                $progress->start($label);
+                $progress->start(sprintf(
+                    '<fg=green>[%s]</> <fg=yellow>[%s]</> - %s',
+                    (new \DateTime('now'))->format('Y-m-d H:i:s'),
+                    $this->on(),
+                    $label,
+                ));
             }
 
             $timer = Timer::tick(500, fn() => $progress?->advance());
@@ -49,7 +55,7 @@ class LocalRunner implements RunnerInterface
             /** @var Process $p */
             $p = null;
 
-            go(function() use ($cmd, $progress, $showProgress, $wg, &$p) {
+            go(function () use ($cmd, $progress, $showProgress, $wg, &$p) {
                 $process = $this->exec($cmd);
 
                 $cid = go(function () use ($process) {
@@ -87,7 +93,13 @@ class LocalRunner implements RunnerInterface
             }
 
             if ($showProgress && null !== $progress) {
-                $progress->finish("{$label} ✔️");
+
+                $progress->finish(sprintf(
+                    '<fg=green>[%s]</> <fg=yellow>[%s]</> - %s',
+                    (new \DateTime('now'))->format('Y-m-d H:i:s'),
+                    $this->on(),
+                    "{$label} ✔️",
+                ));
                 $this->io->writeln('');
             }
 
@@ -113,5 +125,10 @@ class LocalRunner implements RunnerInterface
         $process->start();
 
         return $process;
+    }
+
+    protected function on(): string
+    {
+        return 'localhost';
     }
 }

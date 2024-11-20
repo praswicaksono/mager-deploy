@@ -38,8 +38,8 @@ function run(callable|string|TaskInterface $command, string|Server $on, $local =
     $runner = $runner->build($on, local: $local);
 
     $generator = match(true) {
-        $command instanceof TaskInterface || is_string($command) => (fn() => yield $command)(),
-        default => $command()
+        $command instanceof TaskInterface || is_string($command) => (fn() => yield $command),
+        default => $command
     };
 
     return $runner->run($generator, showProgress: $showProgress, throwError: $throwError);

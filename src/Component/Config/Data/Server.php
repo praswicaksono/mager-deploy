@@ -12,6 +12,7 @@ final class Server
         public ?int $port = null,
         public ?string $user = null,
         public ?string $keyPath = null,
+        public ?string $hostname = null,
     ) {}
 
     /**
