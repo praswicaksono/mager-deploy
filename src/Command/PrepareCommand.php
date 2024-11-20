@@ -12,6 +12,7 @@ use App\Helper\ConfigHelper;
 use App\Helper\HttpHelper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -54,6 +55,16 @@ final class PrepareCommand extends Command
             $this->io->error("Namespace {$namespace} not found}");
 
             return Command::FAILURE;
+        }
+
+        if (! $this->config->isLocal($namespace)) {
+            if (Command::SUCCESS !== $this->getApplication()->doRun(new ArrayInput([
+                'command' => 'provision',
+                'namespace' => $namespace,
+                'hosts' => [$serverConfig->hostname],
+            ]), $output)) {
+                return Command::FAILURE;
+            }
         }
 
         $this->io->title('Preparing Docker Swarm');

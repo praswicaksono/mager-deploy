@@ -1,6 +1,6 @@
 {
   "main": "bin/mager",
-  "directories": ["config", "src", "vendor", "var", "helpers"],
+  "directories": ["config", "src", "vendor", "var", "helpers", "provisions"],
   "files": [".env"],
   "finder": [
     {

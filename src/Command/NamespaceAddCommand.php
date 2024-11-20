@@ -50,6 +50,7 @@ final class NamespaceAddCommand extends Command
         $server['ssh_port'] = null;
         $server['ssh_key_path'] = null;
         $server['role'] = 'manager';
+        $server['hostname'] = 'default';
         $proxyDashboard = 'dashboard.traefik.wip';
         $proxyUser = 'admin';
         $proxyPassword = 'admin123';

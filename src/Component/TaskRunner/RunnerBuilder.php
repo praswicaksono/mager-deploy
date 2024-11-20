@@ -6,6 +6,7 @@ namespace App\Component\TaskRunner;
 
 use App\Component\Config\Config;
 use App\Component\Config\Data\Server;
+use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 final class RunnerBuilder
@@ -23,6 +24,9 @@ final class RunnerBuilder
     private bool $tty = false;
 
     private ?Server $server = null;
+
+    /** @var Collection<int, Server>|null */
+    private ?Collection $serverCollection = null;
 
     private int $concurrency = 5;
 
@@ -95,10 +99,25 @@ final class RunnerBuilder
         return $self;
     }
 
+    /**
+     * @param Collection<int, Server> $serverCollection
+     */
+    public function withServerCollection(Collection $serverCollection): self
+    {
+        $self = clone $this;
+        $self->serverCollection = $serverCollection;
+
+        return $self;
+    }
+
     public function build(string $namespace, bool $local = false): RunnerInterface
     {
         if (null !== $this->server) {
             return new SingleRemoteRunner($this->io, $this->tty, $this->server);
+        }
+
+        if (null !== $this->serverCollection && !$this->serverCollection->isEmpty()) {
+            return new SwooleMultiRemoteRunner($this->io, $this->serverCollection, $this->concurrency);
         }
 
         if ($local) {
