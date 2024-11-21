@@ -41,6 +41,13 @@ final class BuildCommand extends Command
             'name',
             null,
             InputOption::VALUE_REQUIRED,
+            'Project name',
+        );
+
+        $this->addOption(
+            'image',
+            null,
+            InputOption::VALUE_REQUIRED,
             'Image name',
         );
 
@@ -87,20 +94,22 @@ final class BuildCommand extends Command
         $namespace = $input->getOption('namespace') ?? 'local';
         $version = $input->getOption('build') ?? 'latest';
         $name = $input->getOption('name') ?? null;
+        $image = $input->getOption('image') ?? null;
         $target = $input->getOption('target') ?? null;
         $dockerfile = $input->getOption('file') ?? 'Dockerfile';
         $config = $this->config->get($namespace);
 
+        Assert::notEmpty($image, '--image must be a non-empty string');
         Assert::notEmpty($name, '--name must be a non-empty string');
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
-        if (! file_exists($dockerfile)) {
+        if (!file_exists($dockerfile)) {
             $this->io->error('Dockerfile does not exist');
 
             return Command::FAILURE;
         }
 
-        $imageName = "{$namespace}-{$name}:{$version}";
+        $imageName = "{$image}:{$version}";
 
         return runLocally(fn() => $this->buildAndSaveImage(
             $namespace,
@@ -129,7 +138,7 @@ final class BuildCommand extends Command
         }
 
         if ($push) {
-            $build .= ' --output registry';
+            $build .= ' --output=type=registry';
         }
 
         yield "Building {$imageName}" => $build . ' .';
@@ -137,7 +146,6 @@ final class BuildCommand extends Command
         if ($save && !$this->config->isLocal($namespace)) {
             yield "Dump and Compress {$imageName} Image" => "docker save {$imageName} | gzip > /tmp/{$namespace}-{$name}.tar.gz";
         }
-
 
         $this->io->success('Your image successfully built');
 

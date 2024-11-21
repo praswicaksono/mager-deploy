@@ -7,10 +7,10 @@ namespace App\Component\Config\Definition;
 final readonly class Build
 {
     public function __construct(
+        public string $image,
         public string $context,
         public string $dockerfile,
         public ?string $target = null,
-        public ?string $image = null,
     ) {}
 
     public function resolveImageNameTagFromEnv(): ?string

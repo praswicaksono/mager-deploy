@@ -119,24 +119,35 @@ final class DeployCommand extends Command
 
         $imageName = $definition->build->image;
 
-        if (null === $imageName) {
-            // Build target image
-            $build = new ArrayInput([
+        if (file_exists($definition->build->dockerfile)) {
+            $command = [
                 'command' => 'build',
                 '--namespace' => $namespace,
+                '--name' => $definition->name,
                 '--target' => $definition->build->target,
                 '--file' => $definition->build->dockerfile,
-                '--name' => $definition->name,
+                '--image' => $imageName,
                 '--build' => $version,
-                '--save' => null,
-            ]);
+            ];
 
-            $imageName = "{$namespace}-{$definition->name}:{$version}";
+            // if single node don't push to registry
+            if ($this->config->isSingleNode($namespace)) {
+                $command['--save'] = null;
+            } else {
+                $command['--push'] = null;
+            }
 
-            $this->getApplication()->doRun($build, $output);
+            // Build target image
+            $build = new ArrayInput($command);
+
+            $imageName = "{$imageName}:{$version}";
+
+            if (Command::SUCCESS !== $this->getApplication()->doRun($build, $output)) {
+                return Command::FAILURE;
+            }
         }
 
-        if (! $this->config->isLocal($namespace)) {
+        if ($this->config->isSingleNode($namespace) && !$this->config->isLocal($namespace)) {
             $this->io->title('Transfer and Load Image');
             runOnManager(fn() => CommandHelper::transferAndLoadImage($namespace, $definition->name), $namespace);
         }
