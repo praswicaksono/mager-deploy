@@ -29,7 +29,7 @@ final readonly class DockerNode
             self: $array['Self'],
             status: $array['Status'],
             TlsStatus: $array['TLSStatus'],
-            managerStatus: $array['ManagerStatus']  ?? null,
+            managerStatus: $array['ManagerStatus'] ?? null,
         );
     }
 }

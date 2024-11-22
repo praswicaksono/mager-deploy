@@ -34,7 +34,7 @@ final class ProvisionCommand extends Command
     ) {
         parent::__construct();
         $this->supportedOs = [
-            'ubuntu' => require dirname(__DIR__) . '/../provisions/ubuntu.php',
+            'ubuntu' => require dirname(__DIR__).'/../provisions/ubuntu.php',
         ];
     }
 
@@ -67,13 +67,13 @@ final class ProvisionCommand extends Command
 
         $servers = $this->config->getServers($namespace);
         if (!empty($hosts)) {
-            $servers = $servers->filter(fn(Server $server) => in_array($server->hostname, $hosts));
+            $servers = $servers->filter(fn (Server $server) => in_array($server->hostname, $hosts));
         }
 
         foreach ($servers as $server) {
-            $os = trim(runOnServer(fn() => yield from CommandHelper::getOSName(), $server));
+            $os = trim(runOnServer(fn () => yield from CommandHelper::getOSName(), $server));
             if (!array_key_exists($os, $this->supportedOs)) {
-                $this->io->error("[$server->hostname - $server->ip] {$os} currently not supported");
+                $this->io->error("[{$server->hostname} - {$server->ip}] {$os} currently not supported");
 
                 return;
             }

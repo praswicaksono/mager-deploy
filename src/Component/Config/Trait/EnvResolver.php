@@ -7,7 +7,7 @@ namespace App\Component\Config\Trait;
 trait EnvResolver
 {
     /**
-     * @return array<string, string|int|float>
+     * @return array<string, float|int|string>
      */
     public function resolveEnvValue(): array
     {
@@ -15,6 +15,7 @@ trait EnvResolver
         foreach ($this->env as $name => $value) {
             if (is_int($value) || is_float($value)) {
                 $envs[] = "{$name}={$value}";
+
                 continue;
             }
 
@@ -30,10 +31,12 @@ trait EnvResolver
 
                 if (false === $value && '' !== $defaultValue) {
                     $envs[$name] = $defaultValue;
+
                     continue;
                 }
 
                 $envs[] = "{$name}={$value}";
+
                 continue;
             }
 

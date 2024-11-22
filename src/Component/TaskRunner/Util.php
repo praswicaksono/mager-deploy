@@ -12,7 +12,7 @@ use Symfony\Component\Process\Process;
 final class Util
 {
     /**
-     * @param array<string|int, mixed> $args
+     * @param array<int|string, mixed> $args
      * @param string[]                 $cmd
      *
      * @return string[]
@@ -55,7 +55,7 @@ final class Util
 
     public static function createSshConnection(Server $server, bool $tty = false): Ssh
     {
-        /* @phpstan-ignore-next-line */
+        // @phpstan-ignore-next-line
         return Ssh::create(
             $server->user,
             $server->ip,
@@ -69,6 +69,7 @@ final class Util
                 $process->setTty($tty);
                 $process->setIdleTimeout(60 * 30);
             })
-            ->setTimeout(60 * 30);
+            ->setTimeout(60 * 30)
+        ;
     }
 }

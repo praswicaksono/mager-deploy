@@ -10,7 +10,7 @@ final class CommandHelper
 {
     public static function generateTlsCertificateLocally(string $namespace, string $domain): \Generator
     {
-        $path = getenv('HOME') . '/.mager/certs';
+        $path = getenv('HOME').'/.mager/certs';
         if (!is_dir($path)) {
             mkdir($path, 0755);
         }
@@ -30,7 +30,8 @@ final class CommandHelper
                 "UID={$uid}",
                 "GID={$guid}",
             ])
-            ->withCommand($domain);
+            ->withCommand($domain)
+        ;
     }
 
     public static function isServiceRunning(string $namespace, string $name): \Generator
@@ -38,6 +39,7 @@ final class CommandHelper
         $fullServiceName = "{$namespace}-{$name}";
 
         $ret = true;
+
         try {
             yield sprintf('docker service ps --format "{{.ID}}" %s', $fullServiceName);
         } catch (\Throwable) {
@@ -45,7 +47,6 @@ final class CommandHelper
         }
 
         return $ret;
-
     }
 
     public static function removeService(string $namespace, string $name, string $mode = 'replicated'): \Generator
@@ -74,9 +75,10 @@ final class CommandHelper
     public static function ensureServerArePrepared(string $namespace): \Generator
     {
         $ret = true;
+
         try {
             yield 'docker node ls';
-            if (! yield from CommandHelper::isServiceRunning($namespace, 'mager_proxy')) {
+            if (!yield from CommandHelper::isServiceRunning($namespace, 'mager_proxy')) {
                 $ret = false;
             }
         } catch (\Exception) {
@@ -88,7 +90,7 @@ final class CommandHelper
 
     public static function getOSName(): \Generator
     {
-        return yield <<<CMD
+        return yield <<<'CMD'
             grep -w "ID" /etc/os-release | cut -d "=" -f 2 | tr -d '"'
         CMD;
     }

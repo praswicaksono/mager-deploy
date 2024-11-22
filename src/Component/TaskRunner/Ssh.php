@@ -9,6 +9,13 @@ use Symfony\Component\Process\Process;
 
 class Ssh extends BaseSsh
 {
+    public function executeAsyncWithTtyInput(string $command): Process
+    {
+        $sshCommand = $this->getExecuteCommandWithTtyInput($command);
+
+        return $this->run($sshCommand, 'start');
+    }
+
     protected function getExecuteCommandWithTtyInput(string $command): string
     {
         if (in_array($this->host, ['local', 'localhost', '127.0.0.1'])) {
@@ -22,12 +29,5 @@ class Ssh extends BaseSsh
         $target = $this->getTargetForSsh();
 
         return "ssh {$extraOptions} {$target} {$command} < /dev/tty";
-    }
-
-    public function executeAsyncWithTtyInput(string $command): Process
-    {
-        $sshCommand = $this->getExecuteCommandWithTtyInput($command);
-
-        return $this->run($sshCommand, 'start');
     }
 }

@@ -15,7 +15,7 @@ final class HttpHelper
 
     public static function host(string $name, string $host): string
     {
-        return "'traefik.http.routers.{$name}.rule=Host(`$host`)'";
+        return "'traefik.http.routers.{$name}.rule=Host(`{$host}`)'";
     }
 
     public static function port(string $name, int $port): string

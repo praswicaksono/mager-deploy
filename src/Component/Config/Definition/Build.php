@@ -22,7 +22,7 @@ final readonly class Build
 
         $tag = str_replace("{$name}:", '', $this->image);
 
-        if (! str_starts_with($tag, '{') || ! str_ends_with($tag, '}')) {
+        if (!str_starts_with($tag, '{') || !str_ends_with($tag, '}')) {
             return $this->image;
         }
 

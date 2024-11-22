@@ -10,7 +10,7 @@ final class ConfigHelper
 {
     public static function registerTLSCertificateLocally(string $domain): void
     {
-        $path = getenv('HOME') . '/.mager/dynamic.yaml';
+        $path = getenv('HOME').'/.mager/dynamic.yaml';
         $arr = Yaml::parse(file_get_contents($path));
 
         $certs = $arr['tls']['certificates'] ?? [];

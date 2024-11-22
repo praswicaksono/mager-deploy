@@ -45,7 +45,7 @@ final class ServiceDelCommand extends Command
 
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
-        return runOnManager(fn() => $this->deleteService($namespace, $name), $namespace, showProgress: false);
+        return runOnManager(fn () => $this->deleteService($namespace, $name), $namespace, showProgress: false);
     }
 
     private function deleteService(string $namespace, string $name): \Generator
@@ -74,7 +74,8 @@ final class ServiceDelCommand extends Command
                 $this->io->success('Service has been deleted.');
 
                 if (array_key_exists($name, $apps)) {
-                    $appDir = getenv('HOME') . "/.mager/apps/{$namespace}/{$name}";
+                    $appDir = getenv('HOME')."/.mager/apps/{$namespace}/{$name}";
+
                     yield "rm -rf {$appDir}";
                     unset($apps[$name]);
                     $this->config->set("{$namespace}.apps", $apps);

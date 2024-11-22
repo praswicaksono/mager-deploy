@@ -44,7 +44,7 @@ final class NamespaceDelCommand extends Command
 
         $this->io->title("Removing namespace {$namespace} and associated services");
 
-        return runOnManager(fn() => $this->removeAllAssociatedServices($namespace), $namespace);
+        return runOnManager(fn () => $this->removeAllAssociatedServices($namespace), $namespace);
     }
 
     private function removeAllAssociatedServices(string $namespace): \Generator
@@ -56,6 +56,7 @@ final class NamespaceDelCommand extends Command
         }
 
         yield 'Removing Services' => sprintf('docker service rm `docker service ls --format "{{.ID}}" --filter name=%s-`', $namespace);
+
         yield 'Removing Network' => sprintf('docker network rm `docker network ls --format "{{.ID}}" --filter name=%s-main`', $namespace);
 
         $this->config->delete($namespace)->save();

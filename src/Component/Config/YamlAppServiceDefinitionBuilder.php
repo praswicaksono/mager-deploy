@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Component\Config;
 
 use App\Component\Config\Definition\Build;
+use App\Component\Config\Definition\Config as ConfigDefinition;
 use App\Component\Config\Definition\Proxy;
 use App\Component\Config\Definition\ProxyPort;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Yaml\Yaml;
-use App\Component\Config\Definition\Config as ConfigDefinition;
 
 final class YamlAppServiceDefinitionBuilder implements DefinitionBuilder
 {
@@ -35,7 +35,7 @@ final class YamlAppServiceDefinitionBuilder implements DefinitionBuilder
 
         $proxy = new Proxy(
             host: $definition['proxy']['host'] ?? 'localhost',
-            ports: new ArrayCollection(array_map(fn(string $port) => new ProxyPort($port), $definition['proxy']['ports'] ?? [])),
+            ports: new ArrayCollection(array_map(fn (string $port) => new ProxyPort($port), $definition['proxy']['ports'] ?? [])),
             rule: $definition['proxy']['rule'] ?? null,
         );
 

@@ -48,14 +48,14 @@ final class LogsCommand extends Command
 
         $cmd = implode(' ', $cmd);
 
-        $isRunning = runOnManager(fn() => yield from CommandHelper::isServiceRunning($namespace, $serviceName), $namespace);
+        $isRunning = runOnManager(fn () => yield from CommandHelper::isServiceRunning($namespace, $serviceName), $namespace);
         if (!$isRunning) {
             $io->error("Service {$namespace}-{$serviceName} is not running");
 
             return Command::FAILURE;
         }
 
-        $res = runOnManager(fn() => yield $cmd, $namespace, throwError: false, tty: $tty);
+        $res = runOnManager(fn () => yield $cmd, $namespace, throwError: false, tty: $tty);
 
         if (false === $tty) {
             $io->writeln($res);

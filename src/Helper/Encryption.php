@@ -10,6 +10,6 @@ final class Encryption
     {
         $hash = base64_encode(sha1($password, true));
 
-        return '{SHA}' . $hash;
+        return '{SHA}'.$hash;
     }
 }

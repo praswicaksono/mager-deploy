@@ -47,7 +47,7 @@ final class ExecCommand extends Command
         }
 
         $info = trim(runOnManager(
-            fn() => yield "docker service ps {$namespace}-{$serviceName} --format '{{.ID}}:{{.Name}}:{{.Node}}' | head -n1",
+            fn () => yield "docker service ps {$namespace}-{$serviceName} --format '{{.ID}}:{{.Name}}:{{.Node}}' | head -n1",
             $namespace,
         ));
 
@@ -57,7 +57,7 @@ final class ExecCommand extends Command
         $server = $this->config->get("{$namespace}.servers.{$node}");
         $server = new Server($server['ip'], $server['role'], $server['ssh_port'], $server['ssh_user'], $server['ssh_key_path']);
 
-        $containerId = trim(runOnServer(fn() => yield "docker ps -a --filter name={$name} --format '{{ .ID}}'", $server));
+        $containerId = trim(runOnServer(fn () => yield "docker ps -a --filter name={$name} --format '{{ .ID}}'", $server));
 
         runOnServerWithTty("docker exec -ti {$containerId} {$command}", $server);
 

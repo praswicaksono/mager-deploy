@@ -61,17 +61,18 @@ final class InstallCommand extends Command
 
         Assert::notEmpty($config, "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
-        $cwd = runLocally(fn() => $this->resolvePackage($namespace, $url));
+        $cwd = runLocally(fn () => $this->resolvePackage($namespace, $url));
 
-        if (! file_exists($cwd . '/mager.yaml')) {
-            throw new \InvalidArgumentException("Cant find 'mager.yaml' in '$cwd'");
+        if (!file_exists($cwd.'/mager.yaml')) {
+            throw new \InvalidArgumentException("Cant find 'mager.yaml' in '{$cwd}'");
         }
 
         $appDefinitionBuilder = new YamlAppServiceDefinitionBuilder();
-        /** @var AppDefinition $appDefinition */
-        $appDefinition = $appDefinitionBuilder->build($cwd . '/mager.yaml');
 
-        if (($code = runOnManager(fn() => $this->deploy($namespace, $cwd, $appDefinition), $namespace)) === Command::FAILURE) {
+        /** @var AppDefinition $appDefinition */
+        $appDefinition = $appDefinitionBuilder->build($cwd.'/mager.yaml');
+
+        if (($code = runOnManager(fn () => $this->deploy($namespace, $cwd, $appDefinition), $namespace)) === Command::FAILURE) {
             return $code;
         }
 
@@ -133,14 +134,14 @@ final class InstallCommand extends Command
                 'command' => 'build',
                 '--namespace' => $namespace,
                 '--target' => $appDefinition->build->target,
-                '--file' => $cwd . '/' . $appDefinition->build->dockerfile,
+                '--file' => $cwd.'/'.$appDefinition->build->dockerfile,
                 '--name' => $appDefinition->name,
                 '--build' => 'latest',
             ]);
 
             $this->getApplication()->doRun($build, $this->io);
             $image = "{$namespace}-{$appDefinition->name}:latest";
-            if (! $this->config->isLocal($namespace)) {
+            if (!$this->config->isLocal($namespace)) {
                 yield from CommandHelper::transferAndLoadImage($namespace, $image);
             }
         }
@@ -149,7 +150,7 @@ final class InstallCommand extends Command
         $configs = [];
         foreach ($appDefinition->config as $config) {
             $configName = StringHelper::extractConfigNameFromPath($namespace, $config->srcPath);
-            $configFile = $cwd . '/' . $config->srcPath;
+            $configFile = $cwd.'/'.$config->srcPath;
 
             if (!empty(yield sprintf('docker config ls --format "{{.ID}}" --filter name=%s', $configName))) {
                 yield sprintf('docker config rm `docker config ls --format "{{.ID}}" --filter name=%s`', $configName);
@@ -173,7 +174,8 @@ final class InstallCommand extends Command
             ->withCommand($appDefinition->cmd)
             ->withUpdateOrder('start-first')
             ->withUpdateFailureAction('rollback')
-            ->withConfigs($configs);
+            ->withConfigs($configs)
+        ;
 
         return Command::SUCCESS;
     }
@@ -193,12 +195,12 @@ final class InstallCommand extends Command
     private function prepareWorkingDirectory(string $namespace, string $url): array
     {
         // Create local folder to store package
-        $dir = getenv('HOME') . '/.mager/apps/' . $namespace;
+        $dir = getenv('HOME').'/.mager/apps/'.$namespace;
         $appName = explode('/', $url);
         $appName = end($appName);
         $appName = str_replace('apps-', '', $appName);
 
-        $cwd = $dir . '/' . $appName;
+        $cwd = $dir.'/'.$appName;
 
         return [
             $dir, $appName, $cwd,
@@ -228,7 +230,7 @@ final class InstallCommand extends Command
             unzip {$dir}/{$appName}.zip -d {$dir}
             mv {$dir}/apps-{$appName}-{$tag} {$cwd}
             chmod 755 {$cwd}
-            find {$cwd} -type d -exec chmod 755 {} \; && find {$cwd} -type f -exec chmod 644 {} \;
+            find {$cwd} -type d -exec chmod 755 {} \\; && find {$cwd} -type f -exec chmod 644 {} \\;
             rm -f {$cwd}.zip
         CMD;
 

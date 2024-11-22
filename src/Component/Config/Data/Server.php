@@ -16,7 +16,7 @@ final class Server
     ) {}
 
     /**
-     * @return array<string, string|int|null>
+     * @return array<string, null|int|string>
      */
     public function toArray(): array
     {

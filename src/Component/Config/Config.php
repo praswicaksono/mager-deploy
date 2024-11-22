@@ -40,7 +40,7 @@ interface Config
     public function getProxyPassword(string $namespace = self::LOCAL_NAMESPACE): string;
 
     /**
-     * @return array<string, string|array<string, mixed>>
+     * @return array<string, array<string, mixed>|string>
      */
     public function all(): array;
 

@@ -28,6 +28,36 @@ final class BuildCommand extends Command
         parent::__construct();
     }
 
+    public function buildAndSaveImage(
+        string $namespace,
+        string $file,
+        string $imageName,
+        string $name,
+        ?string $target = null,
+        bool $save = false,
+        bool $push = false,
+    ): \Generator {
+        $build = "docker buildx build --tag {$imageName} --file {$file} --progress plain";
+
+        if (null !== $target) {
+            $build .= " --target {$target}";
+        }
+
+        if ($push) {
+            $build .= ' --output=type=registry';
+        }
+
+        yield "Building {$imageName}" => $build.' .';
+
+        if ($save && !$this->config->isLocal($namespace)) {
+            yield "Dump and Compress {$imageName} Image" => "docker save {$imageName} | gzip > /tmp/{$namespace}-{$name}.tar.gz";
+        }
+
+        $this->io->success('Your image successfully built');
+
+        return Command::SUCCESS;
+    }
+
     protected function configure(): void
     {
         $this->addOption(
@@ -111,7 +141,7 @@ final class BuildCommand extends Command
 
         $imageName = "{$image}:{$version}";
 
-        return runLocally(fn() => $this->buildAndSaveImage(
+        return runLocally(fn () => $this->buildAndSaveImage(
             $namespace,
             $dockerfile,
             $imageName,
@@ -120,35 +150,5 @@ final class BuildCommand extends Command
             $input->getOption('save') ?? false,
             $input->getOption('push') ?? false,
         ));
-    }
-
-    public function buildAndSaveImage(
-        string $namespace,
-        string $file,
-        string $imageName,
-        string $name,
-        ?string $target = null,
-        bool $save = false,
-        bool $push = false,
-    ): \Generator {
-        $build = "docker buildx build --tag {$imageName} --file {$file} --progress plain";
-
-        if (null !== $target) {
-            $build .= " --target {$target}";
-        }
-
-        if ($push) {
-            $build .= ' --output=type=registry';
-        }
-
-        yield "Building {$imageName}" => $build . ' .';
-
-        if ($save && !$this->config->isLocal($namespace)) {
-            yield "Dump and Compress {$imageName} Image" => "docker save {$imageName} | gzip > /tmp/{$namespace}-{$name}.tar.gz";
-        }
-
-        $this->io->success('Your image successfully built');
-
-        return Command::SUCCESS;
     }
 }

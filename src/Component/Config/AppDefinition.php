@@ -17,9 +17,9 @@ final readonly class AppDefinition implements Definition
     use VolumeParser;
 
     /**
-     * @param Collection<int, Config>|null    $config
+     * @param null|Collection<int, Config>    $config
      * @param string[]                        $volumes
-     * @param array<string, string|int|float> $env
+     * @param array<string, float|int|string> $env
      */
     public function __construct(
         public string $name,

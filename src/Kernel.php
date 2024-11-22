@@ -21,7 +21,7 @@ class Kernel extends BaseKernel
             }
 
             $dir = \dirname($dir);
-            while (!is_file($dir . '/composer.json')) {
+            while (!is_file($dir.'/composer.json')) {
                 if ($dir === \dirname($dir)) {
                     return \dirname(__DIR__);
                 }

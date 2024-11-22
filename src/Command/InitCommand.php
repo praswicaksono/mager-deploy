@@ -39,9 +39,9 @@ final class InitCommand extends Command
         );
 
         if ('default' === $template) {
-            runLocally(fn() => $this->generateSampleDefinition(), showProgress: false);
+            runLocally(fn () => $this->generateSampleDefinition(), showProgress: false);
         } else {
-            runLocally(fn() => $this->downloadAndExtract($template), showProgress: false);
+            runLocally(fn () => $this->downloadAndExtract($template), showProgress: false);
         }
 
         $this->io->success('Project successfully initialized.');
@@ -60,14 +60,14 @@ final class InitCommand extends Command
             curl -L --progress-bar {$url} -o 'mager-template.zip'
             unzip mager-template.zip -d . && rm -rf mager-template.zip
             rm -f {$folder}/LICENSE.md && rm -f {$folder}/README.md
-            chmod 755 {$folder} && find {$folder} -type d -exec chmod 755 {} \; && find {$folder} -type f -exec chmod 644 {} \; && mv {$folder}/* . && rm -rf {$folder}
+            chmod 755 {$folder} && find {$folder} -type d -exec chmod 755 {} \\; && find {$folder} -type f -exec chmod 644 {} \\; && mv {$folder}/* . && rm -rf {$folder}
         CMD;
 
         if (file_exists('./scripts.php')) {
             $script = require './scripts.php';
             $reflection = new \ReflectionFunction($script);
 
-            /* @phpstan-ignore-next-line */
+            // @phpstan-ignore-next-line
             if (\Generator::class === $reflection->getReturnType()->getName()) {
                 if (1 === $reflection->getNumberOfParameters()) {
                     yield from $script($this->io);
@@ -88,14 +88,14 @@ final class InitCommand extends Command
             return;
         }
 
-        $definition = <<<MAGER
+        $definition = <<<'MAGER'
 name: amazing-app
 services:
   http:
     proxy:
       ports:
         - 80/tcp
-      rule: Host(`{\$host}`)
+      rule: Host(`{$host}`)
       host: amazing-app.com
     execute_once:
       - echo 'true'
@@ -105,6 +105,6 @@ services:
       - echo 'true'
 MAGER;
 
-        yield "echo '$definition' > mager.yaml";
+        yield "echo '{$definition}' > mager.yaml";
     }
 }

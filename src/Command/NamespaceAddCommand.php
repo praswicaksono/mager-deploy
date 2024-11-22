@@ -78,7 +78,7 @@ final class NamespaceAddCommand extends Command
         $this->config->save();
 
         try {
-            $hostname = trim(runOnManager(fn() => yield 'hostname', $namespace));
+            $hostname = trim(runOnManager(fn () => yield 'hostname', $namespace));
         } catch (\Exception $e) {
             $this->config->delete($namespace);
             $this->config->save();
@@ -96,7 +96,7 @@ final class NamespaceAddCommand extends Command
         $this->config->save();
 
         if ($isLocal) {
-            touch(getenv('HOME') . '/.mager/dynamic.yaml');
+            touch(getenv('HOME').'/.mager/dynamic.yaml');
         }
 
         $io->success('Namespace successfully added!');

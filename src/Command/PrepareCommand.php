@@ -57,7 +57,7 @@ final class PrepareCommand extends Command
             return Command::FAILURE;
         }
 
-        if (! $this->config->isLocal($namespace)) {
+        if (!$this->config->isLocal($namespace)) {
             if (Command::SUCCESS !== $this->getApplication()->doRun(new ArrayInput([
                 'command' => 'provision',
                 'namespace' => $namespace,
@@ -68,13 +68,13 @@ final class PrepareCommand extends Command
         }
 
         $this->io->title('Preparing Docker Swarm');
-        runOnManager(fn() => $this->prepareDockerSwarm($serverConfig), $namespace, throwError: false);
+        runOnManager(fn () => $this->prepareDockerSwarm($serverConfig), $namespace, throwError: false);
 
         $this->io->title('Preparing Docker Swarm Network');
-        runOnManager(fn() => $this->prepareNetwork($namespace), $namespace, throwError: false);
+        runOnManager(fn () => $this->prepareNetwork($namespace), $namespace, throwError: false);
 
         $this->io->title('Installing Proxy');
-        runOnManager(fn() => $this->prepareProxy($namespace), $namespace);
+        runOnManager(fn () => $this->prepareProxy($namespace), $namespace);
 
         $this->io->success('Namespace Was Successfully Prepared');
 
@@ -87,6 +87,7 @@ final class PrepareCommand extends Command
 
         if (empty($nodes)) {
             $this->io->section('Init docker swarm');
+
             yield 'Init Docker Swarm' => "docker swarm init --advertise-addr {$serverConfig->ip}";
         }
     }
@@ -160,6 +161,7 @@ final class PrepareCommand extends Command
 
             yield from CommandHelper::generateTlsCertificateLocally($namespace, $proxyDomain);
             ConfigHelper::registerTLSCertificateLocally($proxyDomain);
+
             yield from CommandHelper::removeService($namespace, 'generate-tls-cert', 'replicated-job');
         }
 
@@ -187,6 +189,7 @@ final class PrepareCommand extends Command
             ->withPortPublish(['80:80', '443:443/tcp', '443:443/udp'])
             ->withLabels($dynamicConfig)
             ->withMounts($mounts)
-            ->withCommand(implode(' ', $staticConfig));
+            ->withCommand(implode(' ', $staticConfig))
+        ;
     }
 }

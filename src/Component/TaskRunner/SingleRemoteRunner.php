@@ -31,6 +31,11 @@ final class SingleRemoteRunner extends LocalRunner implements RunnerInterface
         };
     }
 
+    protected function on(): string
+    {
+        return $this->server->hostname ?? $this->server->ip;
+    }
+
     private function upload(Ssh $ssh, string $arg): Process
     {
         [$src, $dest] = explode(':', $arg);
@@ -47,10 +52,5 @@ final class SingleRemoteRunner extends LocalRunner implements RunnerInterface
         }
 
         return $ssh->executeAsync($cmd);
-    }
-
-    protected function on(): string
-    {
-        return $this->server->hostname ?? $this->server->ip;
     }
 }

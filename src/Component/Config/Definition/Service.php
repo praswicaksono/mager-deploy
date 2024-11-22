@@ -14,7 +14,7 @@ final readonly class Service
 
     /**
      * @param array<int, string>              $cmd
-     * @param array<string, string|int|float> $env
+     * @param array<string, float|int|string> $env
      * @param array<int, string>              $volumes
      * @param array<int, string>              $executeOnce
      * @param array<int, string>              $beforeDeploy

@@ -23,7 +23,7 @@ final class Json implements Config
         $object = new self();
 
         $dir = str_replace('/config.json', '', $path);
-        if (! is_dir($dir)) {
+        if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
@@ -98,7 +98,7 @@ final class Json implements Config
 
     public function isMultiNode(string $namespace = self::LOCAL_NAMESPACE): bool
     {
-        return ! $this->isSingleNode($namespace);
+        return !$this->isSingleNode($namespace);
     }
 
     public function getServers(string $namespace = self::LOCAL_NAMESPACE): Collection

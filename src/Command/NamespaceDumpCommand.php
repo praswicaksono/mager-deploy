@@ -42,7 +42,7 @@ final class NamespaceDumpCommand extends Command
 
         $dir = '.mager';
         mkdir($dir, 0755);
-        file_put_contents($dir . '/config.json', json_encode($config, JSON_PRETTY_PRINT));
+        file_put_contents($dir.'/config.json', json_encode($config, JSON_PRETTY_PRINT));
 
         $io->success('Namespace configuration was successfully dumped!');
 

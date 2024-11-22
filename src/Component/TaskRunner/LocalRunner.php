@@ -16,8 +16,8 @@ use Symfony\Component\Process\Process;
 class LocalRunner implements RunnerInterface
 {
     public function __construct(
-        private SymfonyStyle $io,
-        private bool $tty,
+        private readonly SymfonyStyle $io,
+        private readonly bool $tty,
     ) {}
 
     public function run(callable $tasks, bool $showProgress = true, bool $throwError = true): mixed
@@ -34,6 +34,7 @@ class LocalRunner implements RunnerInterface
 
             if (null === $cmd) {
                 $tasks->next();
+
                 continue;
             }
 
@@ -48,7 +49,7 @@ class LocalRunner implements RunnerInterface
                 ));
             }
 
-            $timer = Timer::tick(500, fn() => $progress?->advance());
+            $timer = Timer::tick(500, fn () => $progress?->advance());
 
             $wg = new Coroutine\WaitGroup(1);
 
@@ -60,12 +61,11 @@ class LocalRunner implements RunnerInterface
 
                 $cid = go(function () use ($process) {
                     System::waitSignal(SIGINT);
-                    if (! $process->isRunning()) {
+                    if (!$process->isRunning()) {
                         return;
                     }
                     $process->stop(signal: SIGINT);
                 });
-
 
                 try {
                     $process->wait(function () use ($progress, $showProgress) {
@@ -76,6 +76,7 @@ class LocalRunner implements RunnerInterface
                 } catch (ProcessSignaledException|ProcessTimedOutException $e) {
                     $this->io->error($process->getErrorOutput());
                     $this->io->writeln($process->getOutput());
+
                     throw $e;
                 } finally {
                     $p = $process;
@@ -89,11 +90,11 @@ class LocalRunner implements RunnerInterface
 
             if (0 !== $p->getExitCode() && $throwError) {
                 $tasks->throw(new \Exception($p->getErrorOutput()));
+
                 continue;
             }
 
             if ($showProgress && null !== $progress) {
-
                 $progress->finish(sprintf(
                     '<fg=green>[%s]</> <fg=yellow>[%s]</> - %s',
                     (new \DateTime('now'))->format('Y-m-d H:i:s'),

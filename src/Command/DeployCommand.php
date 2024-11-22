@@ -92,7 +92,7 @@ final class DeployCommand extends Command
         $definition = $this->definitionBuilder->build(override: $override);
 
         $this->io->title('Checking Requirement');
-        if (! runOnManager(fn() => yield from CommandHelper::ensureServerArePrepared($namespace), $namespace)) {
+        if (!runOnManager(fn () => yield from CommandHelper::ensureServerArePrepared($namespace), $namespace)) {
             $this->io->error("Please run 'mager prepare {$namespace}' first");
 
             return Command::FAILURE;
@@ -149,11 +149,12 @@ final class DeployCommand extends Command
 
         if ($this->config->isSingleNode($namespace) && !$this->config->isLocal($namespace)) {
             $this->io->title('Transfer and Load Image');
-            runOnManager(fn() => CommandHelper::transferAndLoadImage($namespace, $definition->name), $namespace);
+            runOnManager(fn () => CommandHelper::transferAndLoadImage($namespace, $definition->name), $namespace);
         }
 
         $this->io->title('Deploying Service');
         $isLocal = $this->config->get("{$namespace}.is_local");
+
         /**
          * @var Service $service
          */
@@ -161,7 +162,7 @@ final class DeployCommand extends Command
             if (!empty($service->beforeDeploy)) {
                 $this->io->section("Executing Before Deploy Hooks {$service->name}");
                 foreach ($service->beforeDeploy as $job) {
-                    runOnManager(fn() => $this->runJob(
+                    runOnManager(fn () => $this->runJob(
                         job: $job,
                         namespace: $namespace,
                         imageName: $imageName,
@@ -172,11 +173,11 @@ final class DeployCommand extends Command
             }
 
             if (null !== $service->proxy->rule && $isLocal) {
-                runLocally(fn() => $this->setupTls($namespace, $service));
+                runLocally(fn () => $this->setupTls($namespace, $service));
             }
 
             $this->io->section("Deploying {$service->name}");
-            runOnManager(fn() => yield from $this->deploy(
+            runOnManager(fn () => yield from $this->deploy(
                 namespace: $namespace,
                 imageName: $imageName,
                 serviceName: "{$definition->name}-{$service->name}",
@@ -187,7 +188,7 @@ final class DeployCommand extends Command
             if (!empty($service->afterDeploy)) {
                 $this->io->section("Executing After Deploy Hooks {$service->name}");
                 foreach ($service->afterDeploy as $job) {
-                    runOnManager(fn() => $this->runJob(
+                    runOnManager(fn () => $this->runJob(
                         job: $job,
                         namespace: $namespace,
                         imageName: $imageName,
@@ -229,7 +230,8 @@ final class DeployCommand extends Command
             ->withNetworks($network)
             ->withCommand($job)
             ->withRestartCondition('none')
-            ->withEnvs($service->env);
+            ->withEnvs($service->env)
+        ;
 
         yield from CommandHelper::removeService($namespace, $name, 'replicated-job');
     }
@@ -312,14 +314,17 @@ final class DeployCommand extends Command
             ->withStopSignal($service->stopSignal)
             ->withHosts($service->hosts)
             ->withLimitCpu($service->option->limitCpu)
-            ->withLimitMemory($service->option->limitMemory);
+            ->withLimitMemory($service->option->limitMemory)
+        ;
     }
 
     private function setupTls(string $namespace, Service $service): \Generator
     {
         $this->io->section("Generate TLS Certificate for {$service->proxy->host}");
+
         yield from CommandHelper::generateTlsCertificateLocally($namespace, $service->proxy->host);
         ConfigHelper::registerTLSCertificateLocally($service->proxy->host);
+
         yield from CommandHelper::removeService($namespace, 'generate-tls-cert', 'replicated-job');
     }
 }

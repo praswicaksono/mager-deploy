@@ -39,7 +39,7 @@ final class YamlServiceDefinitionBuilder implements DefinitionBuilder
         foreach ($services as $name => $service) {
             $proxy = new Proxy(
                 host: $service['proxy']['host'] ?? 'localhost',
-                ports: new ArrayCollection(array_map(fn(string $port) => new ProxyPort($port), $service['proxy']['ports'] ?? [])),
+                ports: new ArrayCollection(array_map(fn (string $port) => new ProxyPort($port), $service['proxy']['ports'] ?? [])),
                 rule: $service['proxy']['rule'] ?? null,
             );
 
