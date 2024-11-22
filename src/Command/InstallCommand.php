@@ -128,7 +128,7 @@ final class InstallCommand extends Command
 
         // Build image if defined
         $image = $appDefinition->build->resolveImageNameTagFromEnv();
-        if (null === $appDefinition->build->image) {
+        if (file_exists("{$cwd}/{$appDefinition->build->dockerfile}")) {
             $build = new ArrayInput([
                 'command' => 'build',
                 '--namespace' => $namespace,

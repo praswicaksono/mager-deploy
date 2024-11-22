@@ -224,6 +224,7 @@ final class DeployCommand extends Command
 
         yield "Executing {$job}" => DockerCreateService::create($namespace, $name, $imageName)
             ->withMode('replicated-job')
+            ->withRegistryAuth()
             ->withConstraints($constraint)
             ->withNetworks($network)
             ->withCommand($job)
@@ -298,6 +299,7 @@ final class DeployCommand extends Command
         }
 
         yield "Deploying {$fullServiceName}" => DockerCreateService::create($namespace, $serviceName, $imageName)
+            ->withRegistryAuth()
             ->withConstraints($constraint)
             ->withNetworks($network)
             ->withEnvs($service->resolveEnvValue())

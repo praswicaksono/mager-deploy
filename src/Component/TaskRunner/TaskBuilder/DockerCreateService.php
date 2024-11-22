@@ -57,6 +57,8 @@ final class DockerCreateService implements TaskInterface
 
     private int $replicas = 1;
 
+    private bool $withRegistryAuth = false;
+
     private string $namespace;
 
     private string $name;
@@ -257,6 +259,14 @@ final class DockerCreateService implements TaskInterface
         return $self;
     }
 
+    public function withRegistryAuth(bool $enable = true): self
+    {
+        $self = clone $this;
+        $self->withRegistryAuth = $enable;
+
+        return $self;
+    }
+
     public function cmd(): array
     {
         $cmd = ['docker', 'service', 'create'];
@@ -308,6 +318,10 @@ final class DockerCreateService implements TaskInterface
 
         if (null !== $this->user) {
             $cmd[] = "--user {$this->user}";
+        }
+
+        if ($this->withRegistryAuth) {
+            $cmd[] = '--with-registry-auth';
         }
 
         $cmd[] = "--name {$this->namespace}-{$this->name}";
