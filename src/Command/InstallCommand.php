@@ -210,9 +210,11 @@ final class InstallCommand extends Command
     private function downloadFromGithub(string $namespace, string $url): \Generator
     {
         // Resolve tag, use master if not defined
+        /** @var string $githubUrl */
+        /** @var ?string $tag */
         @[$githubUrl, $tag] = explode('@', $url);
 
-        if (empty($tag)) {
+        if (null === $tag) {
             $tag = 'master';
         }
         $file = '/archive/refs/heads/master.zip';
