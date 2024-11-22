@@ -19,7 +19,6 @@ use Webmozart\Assert\Assert;
 #[AsCommand(
     name: 'worker:add',
     description: 'Add new worker server',
-    hidden: true,
 )]
 final class WorkerAddCommand extends Command
 {
