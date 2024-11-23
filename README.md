@@ -28,9 +28,9 @@ Instead of `docker-compose.yaml`, Mager have their own definition called `mager.
 ```yaml
 name: project-name
 build:
+  image: someimage # this image required this will be used as image name when pushed to registry
   target: frankenphp_prod
   context: .
-  image: someimage # If you define this, mager will use this image instead of build your image based on Dockerfile
 services:
   service-name:
     cmd: ['php', '-v']
@@ -60,6 +60,7 @@ services:
       rule: Host(`{$host}`) && Path('/') # ${$host} is placeholder, it will replace by value of host attribute
       host: demo-app.com
 ```
+Note: `build.image` will be pulled from registry instead of building from Dockerfile when Dockerfile not exist
 
 # Development
 
