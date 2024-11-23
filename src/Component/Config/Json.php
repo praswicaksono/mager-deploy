@@ -105,7 +105,7 @@ final class Json implements Config
     {
         $servers = $this->get("{$namespace}.servers", []);
 
-        $servers = array_map(function (array $server): Server {
+        $servers = array_map(static function (array $server): Server {
             return new Server($server['ip'], $server['role'], $server['ssh_port'], $server['ssh_user'], $server['ssh_key_path'], str_replace('_', '.', $server['hostname']));
         }, $servers);
 

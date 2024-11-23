@@ -92,7 +92,7 @@ final class DeployCommand extends Command
         $definition = $this->definitionBuilder->build(override: $override);
 
         $this->io->title('Checking Requirement');
-        if (!runOnManager(fn () => yield from CommandHelper::ensureServerArePrepared($namespace), $namespace)) {
+        if (!runOnManager(static fn () => yield from CommandHelper::ensureServerArePrepared($namespace), $namespace)) {
             $this->io->error("Please run 'mager prepare {$namespace}' first");
 
             return Command::FAILURE;
@@ -104,7 +104,7 @@ final class DeployCommand extends Command
         $version = false === $version ? 'latest' : $version;
 
         if ($this->isPreview && 'latest' !== $version) {
-            $version = runLocally(function () {
+            $version = runLocally(static function () {
                 // try to look github sha commit first
                 $version = getenv('GITHUB_SHA');
                 $version = false !== $version ? $version : trim(yield 'git rev-parse HEAD');
@@ -149,7 +149,7 @@ final class DeployCommand extends Command
 
         if ($this->config->isSingleNode($namespace) && !$this->config->isLocal($namespace)) {
             $this->io->title('Transfer and Load Image');
-            runOnManager(fn () => CommandHelper::transferAndLoadImage($namespace, $definition->name), $namespace);
+            runOnManager(static fn () => CommandHelper::transferAndLoadImage($namespace, $definition->name), $namespace);
         }
 
         $this->io->title('Deploying Service');

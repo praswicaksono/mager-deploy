@@ -26,7 +26,7 @@ final class SwooleMultiRemoteRunner implements RunnerInterface
         foreach ($this->servers as $server) {
             go(function () use ($server, $wg, $tasks, $showProgress, $throwError) {
                 $wg->add();
-                defer(fn () => $wg->done());
+                defer(static fn () => $wg->done());
 
                 $runner = new SingleRemoteRunner($this->io, false, $server);
 

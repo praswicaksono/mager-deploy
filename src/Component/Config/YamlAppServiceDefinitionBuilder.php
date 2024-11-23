@@ -35,7 +35,7 @@ final class YamlAppServiceDefinitionBuilder implements DefinitionBuilder
 
         $proxy = new Proxy(
             host: $definition['proxy']['host'] ?? 'localhost',
-            ports: new ArrayCollection(array_map(fn (string $port) => new ProxyPort($port), $definition['proxy']['ports'] ?? [])),
+            ports: new ArrayCollection(array_map(static fn (string $port) => new ProxyPort($port), $definition['proxy']['ports'] ?? [])),
             rule: $definition['proxy']['rule'] ?? null,
         );
 

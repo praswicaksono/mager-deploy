@@ -58,7 +58,7 @@ final class ServiceLsCommand extends Command
     {
         $out = yield sprintf('docker service ls --format "{{json .}}" --filter name=%s', "{$namespace}-");
 
-        $collection = Util::deserializeJsonList($out, function (string $item): DockerService {
+        $collection = Util::deserializeJsonList($out, static function (string $item): DockerService {
             return DockerService::fromJsonString($item);
         });
 

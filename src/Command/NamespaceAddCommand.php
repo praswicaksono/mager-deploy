@@ -78,7 +78,7 @@ final class NamespaceAddCommand extends Command
         $this->config->save();
 
         try {
-            $hostname = trim(runOnManager(fn () => yield 'hostname', $namespace));
+            $hostname = trim(runOnManager(static fn () => yield 'hostname', $namespace));
         } catch (\Exception $e) {
             $this->config->delete($namespace);
             $this->config->save();

@@ -45,10 +45,10 @@ final class RegistryLoginCommand extends Command
         Assert::notEmpty($this->config->get($namespace), "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
         if (!$noPrompt) {
-            runLocally(fn () => yield empty($server) ? "docker login -u {$username}" : "docker login -u {$username} {$server}", tty: true);
+            runLocally(static fn () => yield empty($server) ? "docker login -u {$username}" : "docker login -u {$username} {$server}", tty: true);
         }
 
-        $managers = $this->config->getServers($namespace)->filter(fn (Server $server) => 'manager' === $server->role);
+        $managers = $this->config->getServers($namespace)->filter(static fn (Server $server) => 'manager' === $server->role);
 
         $auth = file_get_contents(getenv('HOME').'/.docker/config.json');
         runOnServerCollection(static function () use ($auth) {

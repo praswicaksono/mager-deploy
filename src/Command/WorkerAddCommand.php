@@ -51,7 +51,7 @@ final class WorkerAddCommand extends Command
             keyPath: $this->io->askQuestion(new Question('Please enter manager ssh key path:', '~/.ssh/id_rsa')),
         );
 
-        $hostname = runOnServer(fn () => yield 'hostname', $server);
+        $hostname = runOnServer(static fn () => yield 'hostname', $server);
         $server->hostname = str_replace('.', '_', trim($hostname));
         $this->config->set("{$namespace}.servers.{$server->hostname}", $server->toArray());
         $this->config->set("{$namespace}.is_single_node", false);
@@ -65,10 +65,10 @@ final class WorkerAddCommand extends Command
             return Command::FAILURE;
         }
 
-        $joinToken = trim(runOnManager(fn () => yield 'docker swarm join-token worker --quiet', $namespace));
-        $managerIp = $this->config->getServers($namespace)->filter(fn (Server $server) => 'manager' === $server->role)->first()->ip;
+        $joinToken = trim(runOnManager(static fn () => yield 'docker swarm join-token worker --quiet', $namespace));
+        $managerIp = $this->config->getServers($namespace)->filter(static fn (Server $server) => 'manager' === $server->role)->first()->ip;
 
-        runOnServer(fn () => yield "docker swarm join --token {$joinToken} {$managerIp}:2377", $server);
+        runOnServer(static fn () => yield "docker swarm join --token {$joinToken} {$managerIp}:2377", $server);
 
         return Command::SUCCESS;
     }

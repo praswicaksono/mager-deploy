@@ -44,7 +44,7 @@ final class NamespaceShowCommand extends Command
 
         $io->title('Namespace Nodes');
 
-        $io->writeln(runOnManager(fn () => yield 'docker node ls', $namespace));
+        $io->writeln(runOnManager(static fn () => yield 'docker node ls', $namespace));
 
         return Command::SUCCESS;
     }

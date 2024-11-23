@@ -65,7 +65,7 @@ final class Util
             ->disableStrictHostKeyChecking()
             ->disablePasswordAuthentication()
             ->useMultiplexing("/tmp/{$server->user}-{$server->ip}-%C")
-            ->configureProcess(function (Process $process) use ($tty) {
+            ->configureProcess(static function (Process $process) use ($tty) {
                 $process->setTty($tty);
                 $process->setIdleTimeout(60 * 30);
             })

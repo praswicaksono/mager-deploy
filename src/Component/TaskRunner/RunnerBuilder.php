@@ -130,14 +130,14 @@ final class RunnerBuilder
 
         if ($this->workerOnly) {
             $servers = $this->config->getServers($namespace)
-                ->filter(fn (Server $server): bool => 'worker' === $server->role)
+                ->filter(static fn (Server $server): bool => 'worker' === $server->role)
             ;
 
             return new SwooleMultiRemoteRunner($this->io, $servers, $this->concurrency);
         }
 
         $managerServers = $this->config->getServers($namespace)
-            ->filter(fn (Server $server): bool => 'manager' === $server->role)
+            ->filter(static fn (Server $server): bool => 'manager' === $server->role)
         ;
 
         // execute in single manager server

@@ -49,7 +49,7 @@ class LocalRunner implements RunnerInterface
                 ));
             }
 
-            $timer = Timer::tick(500, fn () => $progress?->advance());
+            $timer = Timer::tick(500, static fn () => $progress?->advance());
 
             $wg = new Coroutine\WaitGroup(1);
 
@@ -59,7 +59,7 @@ class LocalRunner implements RunnerInterface
             go(function () use ($cmd, $progress, $showProgress, $wg, &$p) {
                 $process = $this->exec($cmd);
 
-                $cid = go(function () use ($process) {
+                $cid = go(static function () use ($process) {
                     System::waitSignal(SIGINT);
                     if (!$process->isRunning()) {
                         return;
@@ -68,7 +68,7 @@ class LocalRunner implements RunnerInterface
                 });
 
                 try {
-                    $process->wait(function () use ($progress, $showProgress) {
+                    $process->wait(static function () use ($progress, $showProgress) {
                         if ($showProgress && null !== $progress) {
                             $progress->advance();
                         }

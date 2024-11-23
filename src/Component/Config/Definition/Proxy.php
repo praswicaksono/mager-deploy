@@ -25,7 +25,7 @@ final readonly class Proxy
         return [
             'host' => $this->host,
             'rule' => $this->rule,
-            'ports' => $this->ports->map(function (ProxyPort $port): string {
+            'ports' => $this->ports->map(static function (ProxyPort $port): string {
                 return $port->port;
             })->toArray(),
         ];
