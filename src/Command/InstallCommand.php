@@ -214,7 +214,7 @@ final class InstallCommand extends Command
         // @var ?string $tag
         @[$githubUrl, $tag] = explode('@', $url);
 
-        if (null === $tag) {
+        if (empty($tag)) {
             $tag = 'master';
         }
         $file = '/archive/refs/heads/master.zip';

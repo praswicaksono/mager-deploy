@@ -6,10 +6,14 @@ namespace App\Component\Config\Definition;
 
 final readonly class Build
 {
+    /**
+     * @param array<string, string> $args
+     */
     public function __construct(
         public string $image,
         public string $context,
         public string $dockerfile,
+        public array $args = [],
         public ?string $target = null,
     ) {}
 
@@ -43,5 +47,21 @@ final readonly class Build
         $default = str_replace('}', '', $default);
 
         return "{$name}:{$default}";
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function resolveArgsValueFromEnv(): array
+    {
+        $args = $this->args;
+        foreach ($this->args as $key => $value) {
+            if (str_starts_with('$', $value)) {
+                $value = getenv(str_replace('$', '', $value));
+            }
+            $args[$key] = $value;
+        }
+
+        return $args;
     }
 }
