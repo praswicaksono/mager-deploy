@@ -83,7 +83,7 @@ jobs:
       - name: "Bundle release"
         run: |
           mkdir release
-          cat downloads/micro.sfx build/mager.phar > release/mager-${{ matrix.arch }} && chmod +x release/mager-${{ matrix.arch }}
+          mv build/mager release/mager-${{ matrix.arch }} && chmod +x release/mager-${{ matrix.arch }}
 
       - name: "Upload Artifact"
         uses: actions/upload-artifact@v4

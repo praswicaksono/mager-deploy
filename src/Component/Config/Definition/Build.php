@@ -11,7 +11,6 @@ final readonly class Build
      */
     public function __construct(
         public string $image,
-        public string $context,
         public string $dockerfile,
         public array $args = [],
         public ?string $target = null,
@@ -50,13 +49,14 @@ final readonly class Build
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, string|int|float>
      */
     public function resolveArgsValueFromEnv(): array
     {
         $args = $this->args;
+
         foreach ($this->args as $key => $value) {
-            if (str_starts_with('$', $value)) {
+            if (is_string($value) && str_starts_with('$', $value)) {
                 $value = getenv(str_replace('$', '', $value));
             }
             $args[$key] = $value;

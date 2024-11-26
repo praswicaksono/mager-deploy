@@ -15,7 +15,6 @@ use App\Helper\ConfigHelper;
 use App\Helper\HttpHelper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -113,6 +112,10 @@ final class DeployCommand extends Command
             }, throwError: false);
         }
 
+        if ($this->isDev) {
+            $version = 'dev-'.$version;
+        }
+
         if ('latest' === $version) {
             $this->io->warning('VERSION environment variable is not detected, using latest as image tag');
         }
@@ -120,40 +123,32 @@ final class DeployCommand extends Command
         $imageName = $definition->build->image;
 
         if (file_exists($definition->build->dockerfile)) {
-            $command = [
-                'command' => 'build',
-                '--namespace' => $namespace,
-                '--name' => $definition->name,
-                '--target' => $definition->build->target,
-                '--file' => $definition->build->dockerfile,
-                '--image' => $imageName,
-                '--build' => $version,
-            ];
-
-            // if single node don't push to registry
-            if ($this->config->isSingleNode($namespace)) {
-                $command['--save'] = null;
-            } else {
-                $command['--push'] = null;
+            $imageName = "{$imageName}:{$version}";
+            $push = true;
+            if ($this->config->isSingleNode($namespace) || $this->config->isLocal($namespace)) {
+                $push = false;
             }
 
-            // Build target image
-            $build = new ArrayInput($command);
+            try {
+                runLocally(function () use ($namespace, $imageName, $definition, $push) {
+                    yield from CommandHelper::buildImage($imageName, $definition->build, $push);
+                    if (false === $push && !$this->config->isLocal($namespace)) {
+                        yield from CommandHelper::dumpAndCompressImage($imageName, $namespace, $definition->name);
+                    }
+                });
+            } catch (\Exception $e) {
+                $this->io->error($e->getMessage());
 
-            $imageName = "{$imageName}:{$version}";
-
-            if (Command::SUCCESS !== $this->getApplication()->doRun($build, $output)) {
                 return Command::FAILURE;
             }
-        }
 
-        if ($this->config->isSingleNode($namespace) && !$this->config->isLocal($namespace)) {
-            $this->io->title('Transfer and Load Image');
-            runOnManager(static fn () => CommandHelper::transferAndLoadImage($namespace, $definition->name), $namespace);
+            if ($this->config->isSingleNode($namespace) && !$this->config->isLocal($namespace)) {
+                $this->io->title('Transfer and Load Image');
+                runOnManager(static fn () => CommandHelper::transferAndLoadImage($namespace, $definition->name), $namespace);
+            }
         }
 
         $this->io->title('Deploying Service');
-        $isLocal = $this->config->get("{$namespace}.is_local");
 
         /**
          * @var Service $service
@@ -172,7 +167,7 @@ final class DeployCommand extends Command
                 }
             }
 
-            if (null !== $service->proxy->rule && $isLocal) {
+            if (null !== $service->proxy->rule && $this->config->isLocal($namespace)) {
                 runLocally(fn () => $this->setupTls($namespace, $service));
             }
 
@@ -182,7 +177,7 @@ final class DeployCommand extends Command
                 imageName: $imageName,
                 serviceName: "{$definition->name}-{$service->name}",
                 service: $service,
-                isLocal: $isLocal,
+                isLocal: $this->config->isLocal($namespace),
             ), $namespace);
 
             if (!empty($service->afterDeploy)) {

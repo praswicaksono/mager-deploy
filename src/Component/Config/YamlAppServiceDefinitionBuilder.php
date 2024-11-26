@@ -22,7 +22,6 @@ final class YamlAppServiceDefinitionBuilder implements DefinitionBuilder
         $buildConfig = $definition['build'] ?? [];
         $build = new Build(
             image: $buildConfig['image'],
-            context: $buildConfig['context'] ?? '.',
             dockerfile: $buildConfig['dockerfile'] ?? 'Dockerfile',
             args: $buildConfig['args'] ?? [],
             target: $buildConfig['target'] ?? null,

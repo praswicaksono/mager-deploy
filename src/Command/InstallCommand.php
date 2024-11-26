@@ -14,7 +14,6 @@ use App\Helper\HttpHelper;
 use App\Helper\StringHelper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -128,23 +127,8 @@ final class InstallCommand extends Command
         }
 
         // Build image if defined
+        // TODO: remove support for building from docker file, might re add later
         $image = $appDefinition->build->resolveImageNameTagFromEnv();
-        if (file_exists("{$cwd}/{$appDefinition->build->dockerfile}")) {
-            $build = new ArrayInput([
-                'command' => 'build',
-                '--namespace' => $namespace,
-                '--target' => $appDefinition->build->target,
-                '--file' => $cwd.'/'.$appDefinition->build->dockerfile,
-                '--name' => $appDefinition->name,
-                '--build' => 'latest',
-            ]);
-
-            $this->getApplication()->doRun($build, $this->io);
-            $image = "{$namespace}-{$appDefinition->name}:latest";
-            if (!$this->config->isLocal($namespace)) {
-                yield from CommandHelper::transferAndLoadImage($namespace, $image);
-            }
-        }
 
         // Create docker config
         $configs = [];

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Helper;
 
+use App\Component\Config\Definition\Build;
 use App\Component\TaskRunner\TaskBuilder\DockerCreateService;
+use App\Component\TaskRunner\TaskBuilder\DockerImageBuild;
 
 final class CommandHelper
 {
@@ -60,14 +62,14 @@ final class CommandHelper
         );
     }
 
-    public static function transferAndLoadImage(string $namespace, string $imageName): \Generator
+    public static function transferAndLoadImage(string $namespace, string $projectName): \Generator
     {
         // Need to yield separate this custom command since it always execute on local
-        yield 'Uploading Image To Server' => "upload /tmp/{$namespace}-{$imageName}.tar.gz:/tmp/{$namespace}-{$imageName}.tar.gz";
+        yield 'Uploading Image To Server' => "upload /tmp/{$namespace}-{$projectName}.tar.gz:/tmp/{$namespace}-{$projectName}.tar.gz";
 
         yield <<<CMD
-            docker load < /tmp/{$namespace}-{$imageName}.tar.gz
-            rm -f /tmp/{$namespace}-{$imageName}.tar.gz
+            docker load < /tmp/{$namespace}-{$projectName}.tar.gz
+            rm -f /tmp/{$namespace}-{$projectName}.tar.gz
             docker image prune -a
         CMD;
     }
@@ -86,6 +88,25 @@ final class CommandHelper
         }
 
         return $ret;
+    }
+
+    public static function buildImage(string $tag, Build $buildDefinition, bool $push = false): \Generator
+    {
+        $build = DockerImageBuild::create($tag, '.')
+            ->withFile($buildDefinition->dockerfile)
+            ->withTarget($buildDefinition->target)
+            ->withArgs($buildDefinition->resolveArgsValueFromEnv())
+        ;
+        if ($push) {
+            $build = $build->withOutput('type=registry');
+        }
+
+        yield "Building {$tag}" => $build;
+    }
+
+    public static function dumpAndCompressImage(string $tag, string $namespace, string $projectName): \Generator
+    {
+        yield "Dump and Compress {$tag} Image" => "docker save {$tag} | gzip > /tmp/{$namespace}-{$projectName}.tar.gz";
     }
 
     public static function getOSName(): \Generator

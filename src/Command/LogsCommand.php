@@ -40,10 +40,8 @@ final class LogsCommand extends Command
         $follow = $input->getOption('follow') ?? false;
 
         $cmd = ['docker', 'service', 'logs', "{$namespace}-{$serviceName}"];
-        $tty = false;
         if ($follow) {
             $cmd[] = '--follow';
-            $tty = true;
         }
 
         $cmd = implode(' ', $cmd);
@@ -55,11 +53,7 @@ final class LogsCommand extends Command
             return Command::FAILURE;
         }
 
-        $res = runOnManager(static fn () => yield $cmd, $namespace, throwError: false, tty: $tty);
-
-        if (false === $tty) {
-            $io->writeln($res);
-        }
+        runOnManager(static fn () => yield $cmd, $namespace, throwError: false, tty: true);
 
         return Command::SUCCESS;
     }
