@@ -26,7 +26,7 @@ final class DockerImageBuild implements TaskInterface
     private ?string $target = null;
 
     /**
-     * @var array<string, string|int|float>
+     * @var array<string, float|int|string>
      */
     private array $args = [];
 
@@ -88,7 +88,7 @@ final class DockerImageBuild implements TaskInterface
     }
 
     /**
-     * @param array<string, string|int|float> $args
+     * @param array<string, float|int|string> $args
      */
     public function withArgs(array $args = []): self
     {

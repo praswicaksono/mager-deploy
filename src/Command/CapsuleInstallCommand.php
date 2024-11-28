@@ -21,10 +21,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Webmozart\Assert\Assert;
 
 #[AsCommand(
-    name: 'install',
-    description: 'Install third party apps',
+    name: 'capsule:install',
+    description: 'Install third party application',
 )]
-final class InstallCommand extends Command
+final class CapsuleInstallCommand extends Command
 {
     private SymfonyStyle $io;
 
@@ -76,7 +76,7 @@ final class InstallCommand extends Command
         }
 
         if (Command::SUCCESS === $code) {
-            $this->config->set("{$namespace}.apps.{$appDefinition->name}", $url);
+            $this->config->set("{$namespace}.capsule.{$appDefinition->name}", $url);
             $this->config->save();
             $this->io->success("{$appDefinition->name} Successfully Installed To {$namespace}");
         }
@@ -87,7 +87,7 @@ final class InstallCommand extends Command
     private function deploy(string $namespace, string $cwd, AppDefinition $appDefinition): \Generator
     {
         if (yield from CommandHelper::isServiceRunning($namespace, $appDefinition->name)) {
-            $this->io->error("Service '{$appDefinition->name}' is already deployed.");
+            $this->io->error("Capsule '{$appDefinition->name}' is already deployed.");
 
             return Command::FAILURE;
         }
@@ -149,7 +149,7 @@ final class InstallCommand extends Command
             );
         }
 
-        yield "Deploying Service: {$appDefinition->name}" => DockerCreateService::create($namespace, $appDefinition->name, $image)
+        yield "Deploying Capsule: {$appDefinition->name}" => DockerCreateService::create($namespace, $appDefinition->name, $image)
             ->withConstraints($constraint)
             ->withNetworks($network)
             ->withLabels($labels)
@@ -179,10 +179,10 @@ final class InstallCommand extends Command
     private function prepareWorkingDirectory(string $namespace, string $url): array
     {
         // Create local folder to store package
-        $dir = getenv('HOME').'/.mager/apps/'.$namespace;
+        $dir = getenv('HOME').'/.mager/capsule/'.$namespace;
         $appName = explode('/', $url);
         $appName = end($appName);
-        $appName = str_replace('apps-', '', $appName);
+        $appName = str_replace('capsule-', '', $appName);
 
         $cwd = $dir.'/'.$appName;
 
@@ -214,13 +214,13 @@ final class InstallCommand extends Command
             mkdir -p -m755 {$dir}
             curl -L --progress-bar {$githubUrl} -o '{$dir}/{$appName}.zip'
             unzip {$dir}/{$appName}.zip -d {$dir}
-            mv {$dir}/apps-{$appName}-{$tag} {$cwd}
+            mv {$dir}/capsule-{$appName}-{$tag} {$cwd}
             chmod 755 {$cwd}
             find {$cwd} -type d -exec chmod 755 {} \\; && find {$cwd} -type f -exec chmod 644 {} \\;
             rm -f {$cwd}.zip
         CMD;
 
-        yield 'Downloading App' => $cmd;
+        yield 'Downloading Capsule Definition' => $cmd;
 
         return $cwd;
     }

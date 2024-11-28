@@ -49,7 +49,7 @@ final readonly class Build
     }
 
     /**
-     * @return array<string, string|int|float>
+     * @return array<string, float|int|string>
      */
     public function resolveArgsValueFromEnv(): array
     {

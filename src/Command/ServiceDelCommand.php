@@ -50,7 +50,7 @@ final class ServiceDelCommand extends Command
 
     private function deleteService(string $namespace, string $name): \Generator
     {
-        $apps = $this->config->get("{$namespace}.apps") ?? [];
+        $capsules = $this->config->get("{$namespace}.capsule") ?? [];
 
         $fullServiceName = "{$namespace}-{$name}";
 
@@ -73,12 +73,12 @@ final class ServiceDelCommand extends Command
                 yield sprintf('docker service rm %s', $serviceId);
                 $this->io->success('Service has been deleted.');
 
-                if (array_key_exists($name, $apps)) {
-                    $appDir = getenv('HOME')."/.mager/apps/{$namespace}/{$name}";
+                if (array_key_exists($name, $capsules)) {
+                    $appDir = getenv('HOME')."/.mager/capsule/{$namespace}/{$name}";
 
                     yield "rm -rf {$appDir}";
-                    unset($apps[$name]);
-                    $this->config->set("{$namespace}.apps", $apps);
+                    unset($capsules[$name]);
+                    $this->config->set("{$namespace}.capsule", $capsules);
                     $this->config->save();
                 }
 

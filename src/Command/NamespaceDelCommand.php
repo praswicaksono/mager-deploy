@@ -59,6 +59,10 @@ final class NamespaceDelCommand extends Command
 
         yield 'Removing Network' => sprintf('docker network rm `docker network ls --format "{{.ID}}" --filter name=%s-main`', $namespace);
 
+        $home = getenv('HOME');
+
+        yield 'Removing Capsule Definition' => "rm -rf {$home}/.mager/capsule/{$namespace}";
+
         $this->config->delete($namespace)->save();
 
         $this->io->success('Namespace has been deleted and services successfully removed');
