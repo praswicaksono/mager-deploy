@@ -6,6 +6,9 @@ namespace App\Command;
 
 use App\Component\Config\Config;
 use App\Component\Config\Data\Server;
+use App\Component\TaskRunner\Util;
+use App\Entity\DockerNode;
+use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -54,7 +57,6 @@ final class WorkerAddCommand extends Command
         $hostname = runOnServer(static fn () => yield 'hostname', $server);
         $server->hostname = str_replace('.', '_', trim($hostname));
         $this->config->set("{$namespace}.servers.{$server->hostname}", $server->toArray());
-        $this->config->set("{$namespace}.is_single_node", false);
         $this->config->save();
 
         if (Command::SUCCESS !== $this->getApplication()->doRun(new ArrayInput([
@@ -69,6 +71,24 @@ final class WorkerAddCommand extends Command
         $managerIp = $this->config->getServers($namespace)->filter(static fn (Server $server) => 'manager' === $server->role)->first()->ip;
 
         runOnServer(static fn () => yield "docker swarm join --token {$joinToken} {$managerIp}:2377", $server);
+
+        $servers = $this->config->get("{$namespace}.servers", []);
+
+        /** @var Collection<int, DockerNode> $nodeCollection */
+        $nodeCollection = Util::deserializeJsonList(
+            runOnManager(static fn () => yield 'docker node ls --format json', $namespace),
+            static fn (string $item): DockerNode => DockerNode::fromJsonString($item)
+        );
+        foreach ($nodeCollection as $node) {
+            $sanitizedHostname = str_replace('.', '_', $node->hostname);
+
+            if (array_key_exists($sanitizedHostname, $servers)) {
+                $servers[$sanitizedHostname]['id'] = $node->id;
+            }
+        }
+
+        $this->config->set("{$namespace}.servers", $servers);
+        $this->config->save();
 
         return Command::SUCCESS;
     }

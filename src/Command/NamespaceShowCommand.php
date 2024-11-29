@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Component\Config\Config;
+use App\Component\TaskRunner\Util;
+use App\Entity\DockerNode;
+use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -44,7 +47,33 @@ final class NamespaceShowCommand extends Command
 
         $io->title('Namespace Nodes');
 
-        $io->writeln(runOnManager(static fn () => yield 'docker node ls', $namespace));
+        /** @var Collection<int, DockerNode> $nodeCollection */
+        $nodeCollection = Util::deserializeJsonList(
+            runOnManager(static fn () => yield 'docker node ls --format json', $namespace),
+            static fn (string $item): DockerNode => DockerNode::fromJsonString($item)
+        );
+
+        $table = $io->createTable();
+        $table->setHeaderTitle('Nodes');
+        $table->setHeaders(['ID', 'IP Address', 'Hostname', 'Role', 'Status', 'Availability', 'Engine Version']);
+
+        foreach ($nodeCollection as $node)
+        {
+            $sanitizedHostname = str_replace('.', '_', $node->hostname);
+            $server = $config['servers'][$sanitizedHostname];
+
+            $table->addRow([
+                $node->id,
+                $server['ip'],
+                $node->hostname,
+                $server['role'],
+                $node->status,
+                $node->availability,
+                $node->engineVersion
+            ]);
+        }
+
+        $table->render();
 
         return Command::SUCCESS;
     }

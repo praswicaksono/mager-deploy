@@ -93,7 +93,7 @@ final class Json implements Config
 
     public function isSingleNode(string $namespace = Config::LOCAL_NAMESPACE): bool
     {
-        return $this->get("{$namespace}.is_single_node", true) || ($this->getServers($namespace)->count() <= 1);
+        return $this->getServers($namespace)->count() <= 1;
     }
 
     public function isMultiNode(string $namespace = self::LOCAL_NAMESPACE): bool
