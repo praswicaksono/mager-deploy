@@ -40,9 +40,18 @@ final class NamespaceDumpCommand extends Command
         $config = $this->config->get($namespace);
         Assert::notEmpty($config, "Namespace {$namespace} are not exists");
 
+        $configArray = [
+            $namespace => [
+                'is_local' => $config['is_local'],
+                'network' => $config['network'],
+                'is_single_node' => $config['is_single_node'],
+                'servers' => $config['servers'],
+            ]
+        ];
+
         $dir = '.mager';
         mkdir($dir, 0755);
-        file_put_contents($dir.'/config.json', json_encode($config, JSON_PRETTY_PRINT));
+        file_put_contents($dir.'/config.json', json_encode($configArray, JSON_PRETTY_PRINT));
 
         $io->success('Namespace configuration was successfully dumped!');
 
