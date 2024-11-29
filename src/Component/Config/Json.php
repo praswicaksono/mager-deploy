@@ -72,13 +72,13 @@ final class Json implements Config
 
     public function isLocal(string $namespace): bool
     {
-        $isLocal = $this->get("{$namespace}.is_local") ?? null;
+        $config = $this->get($namespace) ?? [];
 
-        if (null === $isLocal) {
-            throw new \InvalidArgumentException("{$namespace} not exists, please run 'mager namespace:add <namespace>'");
+        if ([] === $config) {
+            throw new \InvalidArgumentException("{$namespace} not exists, please run 'mager namespace:add local'");
         }
 
-        return $isLocal;
+        return $namespace === 'local';
     }
 
     public function isNotEmpty(): bool

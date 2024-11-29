@@ -39,7 +39,7 @@ final class NamespaceLsCommand extends Command
                 continue;
             }
 
-            $table->addRow([$name, $value['is_single_node'] ? 'TRUE' : 'FALSE', $value['is_local'] ? 'TRUE' : 'FALSE']);
+            $table->addRow([$name, $this->config->isSingleNode($name) ? 'TRUE' : 'FALSE', $this->config->isLocal($name) ? 'TRUE' : 'FALSE']);
         }
 
         $table->render();

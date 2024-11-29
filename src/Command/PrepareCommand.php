@@ -101,7 +101,7 @@ final class PrepareCommand extends Command
 
     private function prepareProxy(string $namespace): \Generator
     {
-        $isLocal = 'local' === $namespace;
+        $isLocal = $this->config->isLocal($namespace);
 
         if (yield from CommandHelper::isServiceRunning($namespace, 'mager_proxy')) {
             $this->io->warning("Traefik proxy already running for {$namespace} namespace");

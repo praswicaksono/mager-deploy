@@ -42,9 +42,6 @@ final class NamespaceDumpCommand extends Command
 
         $configArray = [
             $namespace => [
-                'is_local' => $config['is_local'],
-                'network' => $config['network'],
-                'is_single_node' => $config['is_single_node'],
                 'servers' => $config['servers'],
             ]
         ];

@@ -67,13 +67,9 @@ final class NamespaceAddCommand extends Command
         }
 
         $this->config->set("{$namespace}.servers.default", $server);
-        $this->config->set("{$namespace}.namespace", $namespace);
         $this->config->set("{$namespace}.proxy_dashboard", $proxyDashboard);
         $this->config->set("{$namespace}.proxy_user", $proxyUser);
         $this->config->set("{$namespace}.proxy_password", Encryption::Htpasswd($proxyPassword));
-        $this->config->set("{$namespace}.is_local", $isLocal);
-        $this->config->set("{$namespace}.network", "{$namespace}-main");
-        $this->config->set("{$namespace}.is_single_node", true);
 
         $this->config->save();
 
