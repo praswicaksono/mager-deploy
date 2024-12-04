@@ -78,7 +78,7 @@ final class Json implements Config
             throw new \InvalidArgumentException("{$namespace} not exists, please run 'mager namespace:add local'");
         }
 
-        return $namespace === 'local';
+        return 'local' === $namespace;
     }
 
     public function isNotEmpty(): bool

@@ -57,8 +57,7 @@ final class NamespaceShowCommand extends Command
         $table->setHeaderTitle('Nodes');
         $table->setHeaders(['ID', 'IP Address', 'Hostname', 'Role', 'Status', 'Availability', 'Engine Version']);
 
-        foreach ($nodeCollection as $node)
-        {
+        foreach ($nodeCollection as $node) {
             $sanitizedHostname = str_replace('.', '_', $node->hostname);
             $server = $config['servers'][$sanitizedHostname];
 
@@ -69,7 +68,7 @@ final class NamespaceShowCommand extends Command
                 $server['role'],
                 $node->status,
                 $node->availability,
-                $node->engineVersion
+                $node->engineVersion,
             ]);
         }
 

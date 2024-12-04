@@ -23,20 +23,13 @@ use Webmozart\Assert\Assert;
 )]
 final class ProvisionCommand extends Command
 {
+    private const BASE_URL = ' https://raw.githubusercontent.com/magerdeploy/server-provision/refs/heads/master/src';
     private SymfonyStyle $io;
-
-    /**
-     * @var array<string, callable(): void>
-     */
-    private array $supportedOs;
 
     public function __construct(
         private readonly Config $config,
     ) {
         parent::__construct();
-        $this->supportedOs = [
-            'ubuntu' => require dirname(__DIR__).'/../provisions/ubuntu.php',
-        ];
     }
 
     protected function configure(): void
@@ -55,15 +48,14 @@ final class ProvisionCommand extends Command
         $file = $input->getOption('file') ?? null;
 
         $this->io->title('Provisioning');
-        $this->provision($namespace, $hosts, $file);
 
-        return Command::SUCCESS;
+        return $this->provision($namespace, $hosts, $file);
     }
 
     /**
      * @param string[] $hosts
      */
-    private function provision(string $namespace, array $hosts = [], ?string $file = null): void
+    private function provision(string $namespace, array $hosts = [], ?string $file = null): int
     {
         Assert::notEmpty($this->config->get($namespace), "Namespace {$namespace} are not initialized, run mager namespace:add {$namespace}");
 
@@ -76,20 +68,26 @@ final class ProvisionCommand extends Command
 
         foreach ($servers as $server) {
             $os = trim(runOnServer(static fn () => yield from CommandHelper::getOSName(), $server));
-            if (!array_key_exists($os, $this->supportedOs)) {
-                $this->io->error("[{$server->hostname} - {$server->ip}] {$os} currently not supported");
 
-                return;
+            try {
+                $script = sprintf('%s/%s.php', self::BASE_URL, $os);
+                runLocally(static fn () => yield "wget {$script} -O /tmp/{$os}.php");
+            } catch (\Exception) {
+                $this->io->error("{$os} currently not supported");
+
+                return Command::FAILURE;
             }
             $groupByOs[$os][] = $server;
         }
 
         foreach ($groupByOs as $os => $servers) {
-            $script = $this->supportedOs[$os];
+            $script = require "/tmp/{$os}.php";
             if (null !== $file && file_exists($file)) {
                 $script = require $file;
             }
             runOnServerCollection($script, new ArrayCollection($servers));
         }
+
+        return Command::SUCCESS;
     }
 }

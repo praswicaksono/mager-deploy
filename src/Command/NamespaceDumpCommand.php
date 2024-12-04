@@ -43,7 +43,7 @@ final class NamespaceDumpCommand extends Command
         $configArray = [
             $namespace => [
                 'servers' => $config['servers'],
-            ]
+            ],
         ];
 
         $dir = '.mager';
