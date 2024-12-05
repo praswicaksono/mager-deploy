@@ -36,6 +36,9 @@ final class CommandHelper
         ;
     }
 
+    /**
+     * @return \Generator<int, string, string, bool>
+     */
     public static function isServiceRunning(string $namespace, string $name): \Generator
     {
         $fullServiceName = "{$namespace}-{$name}";
@@ -109,10 +112,21 @@ final class CommandHelper
         yield "Dump and Compress {$tag} Image" => "docker save {$tag} | gzip > /tmp/{$namespace}-{$projectName}.tar.gz";
     }
 
+    /**
+     * @return \Generator<int, string, string, string>
+     */
     public static function getOSName(): \Generator
     {
-        return yield <<<'CMD'
+        return trim(yield <<<'CMD'
             grep -w "ID" /etc/os-release | cut -d "=" -f 2 | tr -d '"'
-        CMD;
+        CMD);
+    }
+
+    /**
+     * @return \Generator<int, string, string, int>
+     */
+    public static function getNumberOfRunningContainers(string $namespace, string $name): \Generator
+    {
+        return (int) trim(yield "docker service ps {$namespace}-{$name} | grep Running | wc -l");
     }
 }
